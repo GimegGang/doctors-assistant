@@ -128,7 +128,9 @@ func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error
 		if err = rows.Scan(&med.Id, &med.Name, &med.TakingDuration, &med.TreatmentDuration, &med.UserId, &med.Date); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		medicines = append(medicines, &med)
+		if time.Now().Before(med.Date.Add((time.Hour * 24) * time.Duration(med.TreatmentDuration))) {
+			medicines = append(medicines, &med)
+		}
 	}
 
 	if len(medicines) == 0 {

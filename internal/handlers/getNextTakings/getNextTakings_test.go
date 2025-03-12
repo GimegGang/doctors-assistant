@@ -3,9 +3,11 @@ package getNextTakings
 import (
 	"KODE_test/internal/logger"
 	"KODE_test/internal/storage"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -37,12 +39,14 @@ func TestGetNextTakingsHandler(t *testing.T) {
 		input        string
 		shouldError  bool
 		expectedCode int
+		out          string
 	}{
 		{
 			name:         "normal case",
 			input:        "user_id=1",
 			shouldError:  false,
 			expectedCode: http.StatusOK,
+			out:          `{"medicines":[{"name":"test","times":"08:00"},{"name":"test","times":"22:00"}]}`,
 		},
 		{
 			name:         "empty time case",
@@ -70,14 +74,38 @@ func TestGetNextTakingsHandler(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
+
 		t.Run(tc.name, func(t *testing.T) {
+			now := time.Now()
+			timeNow = func() time.Time {
+				return time.Date(now.Year(), now.Month(), now.Day(), 7, 30, 0, 0, time.Local)
+			}
+			defer func() { timeNow = time.Now }()
+
 			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)
 			rr := httptest.NewRecorder()
 			mockDB := &MockDB{shouldError: tc.shouldError}
-			handler := GetNextTakingsHandler(logger.MustLoad("local"), mockDB, time.Hour)
+			handler := GetNextTakingsHandler(logger.MustLoad("local"), mockDB, time.Hour*15)
 			handler.ServeHTTP(rr, req)
 			if rr.Code != tc.expectedCode {
 				t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, tc.expectedCode)
+			}
+			if tc.out != "" {
+				var exp, actual interface{}
+
+				err := json.Unmarshal([]byte(tc.out), &exp)
+				if err != nil {
+					t.Fatalf("Failed to unmarshal json: %v", err)
+				}
+
+				err = json.Unmarshal(rr.Body.Bytes(), &actual)
+				if err != nil {
+					t.Fatalf("Failed to unmarshal json: %v", err)
+				}
+
+				if !reflect.DeepEqual(exp, actual) {
+					t.Fatalf("Expected: %v, got: %v", exp, actual)
+				}
 			}
 		})
 	}
