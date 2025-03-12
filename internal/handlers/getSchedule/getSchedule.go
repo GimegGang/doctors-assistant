@@ -1,4 +1,4 @@
-package handlers
+package getSchedule
 
 import (
 	"KODE_test/internal/reception"
@@ -32,7 +32,7 @@ func GetScheduleHandler(log *slog.Logger, db getSchedule) http.HandlerFunc {
 		}
 
 		id, err := strconv.ParseInt(strId, 10, 64)
-		if err != nil {
+		if err != nil || id < 1 {
 			logger.Error("invalid parameter id", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, "invalid parameter id")

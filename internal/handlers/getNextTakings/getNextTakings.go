@@ -1,4 +1,4 @@
-package handlers
+package getNextTakings
 
 import (
 	"KODE_test/internal/reception"
@@ -25,7 +25,7 @@ type medicine struct {
 	Time string `json:"times"`
 }
 
-func NextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration) http.HandlerFunc {
+func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fun = "handlers.NextTakingsHandler"
 		log = log.With(slog.String("fun", fun), slog.String("request_id", middleware.GetReqID(r.Context())))
@@ -39,7 +39,7 @@ func NextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration) h
 		}
 
 		id, err := strconv.ParseInt(strId, 10, 64)
-		if err != nil {
+		if err != nil || id < 1 {
 			log.Error("invalid parameter id")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, "invalid parameter id")

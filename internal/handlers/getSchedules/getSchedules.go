@@ -1,4 +1,4 @@
-package handlers
+package getSchedules
 
 import (
 	"KODE_test/internal/storage"

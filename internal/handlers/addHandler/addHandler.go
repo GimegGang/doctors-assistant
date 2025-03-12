@@ -1,4 +1,4 @@
-package handlers
+package addHandler
 
 import (
 	"KODE_test/internal/storage"
@@ -28,6 +28,12 @@ func AddScheduleHandler(log *slog.Logger, db addSchedule) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, "invalid request")
 			return
+		}
+
+		if req.Name == "" || req.TreatmentDuration <= 0 || req.TakingDuration <= 0 || req.UserId <= 0 {
+			log.Error("invalid request", "req", req)
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, "invalid request")
 		}
 
 		id, err := db.AddMedicine(req)

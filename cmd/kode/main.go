@@ -2,7 +2,10 @@ package main
 
 import (
 	"KODE_test/internal/config"
-	"KODE_test/internal/handlers"
+	"KODE_test/internal/handlers/addHandler"
+	"KODE_test/internal/handlers/getNextTakings"
+	"KODE_test/internal/handlers/getSchedule"
+	"KODE_test/internal/handlers/getSchedules"
 	"KODE_test/internal/logger"
 	"KODE_test/internal/storage/sqlite"
 	"errors"
@@ -21,7 +24,7 @@ func main() {
 
 	db, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
-		log.Error("Error opening database", err)
+		log.Error("Error opening database", "error", err)
 		os.Exit(1)
 	}
 
@@ -31,10 +34,10 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/schedule", handlers.AddScheduleHandler(log, db))
-	router.Get("/schedules", handlers.GetSchedulesHandler(log, db))
-	router.Get("/schedule", handlers.GetScheduleHandler(log, db)) //в моей реализации параметр user_id не требуется
-	router.Get("/next_takings", handlers.NextTakingsHandler(log, db, cfg.TimePeriod))
+	router.Post("/schedule", addHandler.AddScheduleHandler(log, db))
+	router.Get("/schedules", getSchedules.GetSchedulesHandler(log, db))
+	router.Get("/schedule", getSchedule.GetScheduleHandler(log, db)) //в моей реализации параметр user_id не требуется
+	router.Get("/next_takings", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
