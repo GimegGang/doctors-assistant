@@ -1,11 +1,11 @@
 package addHandler
 
 import (
-	"KODE_test/internal/logger"
-	"KODE_test/internal/storage"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"kode/internal/logger"
+	"kode/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"reflect"

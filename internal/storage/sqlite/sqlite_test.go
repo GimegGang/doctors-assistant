@@ -1,8 +1,8 @@
 package sqlite
 
 import (
-	"KODE_test/internal/storage"
 	"errors"
+	"kode/internal/storage"
 	"os"
 	"testing"
 )

@@ -1,4 +1,4 @@
-module KODE_test
+module kode
 
 go 1.23.0
 

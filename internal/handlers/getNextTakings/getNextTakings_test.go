@@ -1,10 +1,10 @@
 package getNextTakings
 
 import (
-	"KODE_test/internal/logger"
-	"KODE_test/internal/storage"
 	"encoding/json"
 	"errors"
+	"kode/internal/logger"
+	"kode/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -74,7 +74,6 @@ func TestGetNextTakingsHandler(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			now := time.Now()
 			timeNow = func() time.Time {

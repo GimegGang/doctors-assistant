@@ -1,11 +1,11 @@
 package sqlite
 
 import (
-	"KODE_test/internal/storage"
 	"database/sql"
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"kode/internal/storage"
 	"time"
 )
 

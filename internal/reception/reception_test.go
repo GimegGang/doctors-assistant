@@ -1,7 +1,7 @@
 package reception
 
 import (
-	"KODE_test/internal/storage"
+	"kode/internal/storage"
 	"testing"
 )
 
@@ -12,10 +12,8 @@ func TestGetReceptionIntake(t *testing.T) {
 		expectedLen int
 	}{
 		{
-			name: "normal case",
-			input: &storage.Medicine{
-				TakingDuration: 3,
-			},
+			name:        "normal case",
+			input:       &storage.Medicine{TakingDuration: 3},
 			expectedLen: 3,
 		},
 		{
@@ -24,10 +22,8 @@ func TestGetReceptionIntake(t *testing.T) {
 			expectedLen: 0,
 		},
 		{
-			name: "invalid case",
-			input: &storage.Medicine{
-				TakingDuration: -1,
-			},
+			name:        "invalid case",
+			input:       &storage.Medicine{TakingDuration: -1},
 			expectedLen: 0,
 		},
 	}

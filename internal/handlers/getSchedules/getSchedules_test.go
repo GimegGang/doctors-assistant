@@ -1,8 +1,8 @@
 package getSchedules
 
 import (
-	"KODE_test/internal/logger"
 	"errors"
+	"kode/internal/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"

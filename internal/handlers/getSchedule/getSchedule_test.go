@@ -1,10 +1,10 @@
 package getSchedule
 
 import (
-	"KODE_test/internal/logger"
-	"KODE_test/internal/storage"
 	"encoding/json"
 	"errors"
+	"kode/internal/logger"
+	"kode/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -38,17 +38,24 @@ func TestGetScheduleHandler(t *testing.T) {
 	}{
 		{
 			name:         "normal case",
-			input:        "schedule_id=1",
+			input:        "schedule_id=1&user_id=1",
 			shouldError:  false,
 			expectedCode: http.StatusOK,
 			out: `{"id":0,"name":"test","taking_duration":2,"treatment_duration":2,"user_id":1,
 							"schedule":["08:00","22:00"],"date":"0001-01-01T00:00:00Z"}`,
 		},
 		{
-			name:         "error input case",
-			input:        "schedule_id=-1",
-			shouldError:  true,
+			name:         "error schedule_id input case",
+			input:        "schedule_id=-1&user_id=1",
+			shouldError:  false,
 			expectedCode: http.StatusBadRequest,
+			out:          "",
+		},
+		{
+			name:         "error user_id input case",
+			input:        "schedule_id=1&user_id=5",
+			shouldError:  false,
+			expectedCode: http.StatusForbidden,
 			out:          "",
 		},
 		{
@@ -60,7 +67,7 @@ func TestGetScheduleHandler(t *testing.T) {
 		},
 		{
 			name:         "database error case",
-			input:        "schedule_id=1",
+			input:        "schedule_id=1&user_id=1",
 			shouldError:  true,
 			expectedCode: http.StatusInternalServerError,
 			out:          "",

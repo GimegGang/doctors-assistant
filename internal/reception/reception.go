@@ -1,7 +1,7 @@
 package reception
 
 import (
-	"KODE_test/internal/storage"
+	"kode/internal/storage"
 	"time"
 )
 

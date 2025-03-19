@@ -1,14 +1,15 @@
 package getNextTakings
 
 import (
-	"KODE_test/internal/reception"
-	"KODE_test/internal/storage"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"kode/internal/reception"
+	"kode/internal/storage"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -26,6 +27,12 @@ type medicine struct {
 	Name string `json:"name"`
 	Time string `json:"times"`
 }
+
+type ByTime []medicine
+
+func (a ByTime) Len() int           { return len(a) }
+func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByTime) Less(i, j int) bool { return a[i].Time < a[j].Time }
 
 var timeNow = time.Now // переменная для подмены в тестах
 
@@ -111,6 +118,7 @@ func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration
 			select {
 			case med, ok := <-resChan:
 				if !ok {
+					sort.Sort(ByTime(res.Medicines))
 					render.JSON(w, r, res)
 					return
 				}

@@ -1,9 +1,9 @@
 package addHandler
 
 import (
-	"KODE_test/internal/storage"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 )

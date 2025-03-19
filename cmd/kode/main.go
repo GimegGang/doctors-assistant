@@ -1,16 +1,16 @@
 package main
 
 import (
-	"KODE_test/internal/config"
-	"KODE_test/internal/handlers/addHandler"
-	"KODE_test/internal/handlers/getNextTakings"
-	"KODE_test/internal/handlers/getSchedule"
-	"KODE_test/internal/handlers/getSchedules"
-	"KODE_test/internal/logger"
-	"KODE_test/internal/storage/sqlite"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"kode/internal/config"
+	"kode/internal/handlers/addHandler"
+	"kode/internal/handlers/getNextTakings"
+	"kode/internal/handlers/getSchedule"
+	"kode/internal/handlers/getSchedules"
+	"kode/internal/logger"
+	"kode/internal/storage/sqlite"
 	"log/slog"
 	"net/http"
 	"os"
@@ -36,8 +36,8 @@ func main() {
 
 	router.Post("/schedule", addHandler.AddScheduleHandler(log, db))
 	router.Get("/schedules", getSchedules.GetSchedulesHandler(log, db))
-	router.Get("/schedule", getSchedule.GetScheduleHandler(log, db)) //в моей реализации параметр user_id не требуется
-	router.Get("/next_takings", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
+	router.Get("/schedule", getSchedule.GetScheduleHandler(log, db))
+	router.Get("/", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
