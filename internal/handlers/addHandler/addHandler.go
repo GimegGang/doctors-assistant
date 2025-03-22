@@ -34,6 +34,7 @@ func AddScheduleHandler(log *slog.Logger, db addSchedule) http.HandlerFunc {
 			log.Error("invalid request", "req", req)
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, "invalid request")
+			return
 		}
 
 		id, err := db.AddMedicine(req)
