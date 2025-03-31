@@ -46,6 +46,7 @@ func (s *Storage) GetMedicines(medId int64) ([]*int64, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
+	defer rows.Close()
 
 	var res []*int64
 
@@ -71,6 +72,7 @@ func (s *Storage) AddMedicine(schedule storage.Medicine) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
+	defer stmt.Close()
 
 	res, err := stmt.Exec(schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now())
 	if err != nil {
@@ -91,6 +93,7 @@ func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
+	defer stmt.Close()
 
 	var res storage.Medicine
 
@@ -109,7 +112,7 @@ func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
 }
 
 func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error) {
-	const op = "internal/storage/sqlite.GetMedicinesByUserID"
+	const fun = "internal/storage/sqlite.GetMedicinesByUserID"
 
 	rows, err := s.Query(`
         SELECT id, name, taking_duration, treatment_duration, user_id, date 
@@ -117,7 +120,7 @@ func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error
         WHERE user_id = ?
     `, userID)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
 	defer rows.Close()
 
@@ -126,7 +129,7 @@ func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error
 	for rows.Next() {
 		var med storage.Medicine
 		if err = rows.Scan(&med.Id, &med.Name, &med.TakingDuration, &med.TreatmentDuration, &med.UserId, &med.Date); err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
+			return nil, fmt.Errorf("%s: %w", fun, err)
 		}
 		if time.Now().Before(med.Date.Add((time.Hour * 24) * time.Duration(med.TreatmentDuration))) {
 			medicines = append(medicines, &med)
