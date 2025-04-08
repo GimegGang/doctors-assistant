@@ -2,8 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gin-gonic/gin"
 	"kode/internal/config"
 	"kode/internal/handlers/addHandler"
 	"kode/internal/handlers/getNextTakings"
@@ -28,16 +27,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	router := chi.NewRouter()
-	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
-	router.Use(middleware.Logger)
-	router.Use(middleware.URLFormat)
+	if cfg.Env == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	router := gin.New()
 
-	router.Post("/schedule", addHandler.AddScheduleHandler(log, db))
-	router.Get("/schedules", getSchedules.GetSchedulesHandler(log, db))
-	router.Get("/schedule", getSchedule.GetScheduleHandler(log, db))
-	router.Get("/", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
+	// Middleware (аналоги Chi)
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
+	router.Use(func(c *gin.Context) {
+		c.Header("X-Request-ID", c.GetHeader("X-Request-ID"))
+		c.Next()
+	})
+
+	router.POST("/schedule", addHandler.AddScheduleHandler(log, db))
+	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, db))
+	router.GET("/schedule", getSchedule.GetScheduleHandler(log, db))
+	router.GET("/next_takings", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,

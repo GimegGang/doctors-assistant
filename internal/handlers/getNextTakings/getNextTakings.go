@@ -3,8 +3,7 @@ package getNextTakings
 import (
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
+	"github.com/gin-gonic/gin"
 	"kode/internal/reception"
 	"kode/internal/storage"
 	"log/slog"
@@ -36,24 +35,25 @@ func (a ByTime) Less(i, j int) bool { return a[i].Time < a[j].Time }
 
 var timeNow = time.Now // переменная для подмены в тестах
 
-func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const fun = "handlers.NextTakingsHandler"
-		log = log.With(slog.String("fun", fun), slog.String("request_id", middleware.GetReqID(r.Context())))
+		log = log.With(
+			slog.String("fun", fun),
+			slog.String("request_id", c.GetHeader("X-Request-ID")),
+		)
 
-		strId := r.URL.Query().Get("user_id")
+		strId := c.Query("user_id")
 		if strId == "" {
 			log.Error("missing parameter id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "missing parameter id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing parameter id"})
 			return
 		}
 
 		id, err := strconv.ParseInt(strId, 10, 64)
 		if err != nil || id < 0 {
 			log.Error("invalid parameter id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid parameter id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parameter id"})
 			return
 		}
 
@@ -61,17 +61,15 @@ func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRows) {
 				log.Warn("Medicine not found", slog.Any("error", err))
-				w.WriteHeader(http.StatusNotFound)
-				render.JSON(w, r, "Medicine not found")
+				c.JSON(http.StatusNotFound, gin.H{"error": "Medicine not found"})
 				return
 			}
 			log.Error("error getting medicines")
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, "error getting medicines")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error getting medicines"})
 			return
 		}
 
-		now := timeNow() // применяю переменную для подмены в тестах
+		now := timeNow()
 		nextPeriod := now.Add(period)
 
 		var res getTakingResponse
@@ -114,12 +112,13 @@ func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration
 			close(resChan)
 			close(errChan)
 		}()
+
 		for {
 			select {
 			case med, ok := <-resChan:
 				if !ok {
 					sort.Sort(ByTime(res.Medicines))
-					render.JSON(w, r, res)
+					c.JSON(http.StatusOK, res)
 					return
 				}
 				res.Medicines = append(res.Medicines, med)
@@ -129,8 +128,7 @@ func GetNextTakingsHandler(log *slog.Logger, db getTakings, period time.Duration
 					continue
 				}
 				log.Error("error in goroutine", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				render.JSON(w, r, "internal server error")
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 				return
 			}
 		}

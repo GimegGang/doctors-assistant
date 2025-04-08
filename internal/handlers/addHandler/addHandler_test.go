@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
 	"kode/internal/storage"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -21,6 +23,13 @@ func (m *MockDB) AddMedicine(schedule storage.Medicine) (int64, error) {
 		return 0, errors.New("error")
 	}
 	return 1, nil
+}
+
+func setupRouter(log *slog.Logger, db *MockDB) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.POST("/schedule", AddScheduleHandler(log, db))
+	return r
 }
 
 func TestAddScheduleHandler(t *testing.T) {
@@ -68,17 +77,21 @@ func TestAddScheduleHandler(t *testing.T) {
 			out:          "",
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			body, _ := json.Marshal(tc.input)
-			req, _ := http.NewRequest(http.MethodPost, "/schedule", bytes.NewBuffer(body))
-			rr := httptest.NewRecorder()
 			mockDB := &MockDB{shouldError: tc.shouldError}
-			handler := AddScheduleHandler(logger.MustLoad("local"), mockDB)
-			handler.ServeHTTP(rr, req)
+			router := setupRouter(logger.MustLoad("local"), mockDB)
 
-			if rr.Code != tc.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, tc.expectedCode)
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodPost, "/schedule", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", w.Code, tc.expectedCode)
 			}
 
 			if tc.out != "" {
@@ -89,7 +102,7 @@ func TestAddScheduleHandler(t *testing.T) {
 					t.Fatalf("Failed to unmarshal json: %v", err)
 				}
 
-				err = json.Unmarshal(rr.Body.Bytes(), &actual)
+				err = json.Unmarshal(w.Body.Bytes(), &actual)
 				if err != nil {
 					t.Fatalf("Failed to unmarshal json: %v", err)
 				}

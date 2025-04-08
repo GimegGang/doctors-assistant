@@ -2,8 +2,7 @@ package getSchedule
 
 import (
 	"errors"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
+	"github.com/gin-gonic/gin"
 	"kode/internal/reception"
 	"kode/internal/storage"
 	"log/slog"
@@ -15,77 +14,68 @@ type getSchedule interface {
 	GetMedicine(id int64) (*storage.Medicine, error)
 }
 
-func GetScheduleHandler(log *slog.Logger, db getSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GetScheduleHandler(log *slog.Logger, db getSchedule) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const fun = "handler.GetScheduleHandler"
 		logger := log.With(
 			slog.String("fun", fun),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
+			slog.String("request_id", c.GetHeader("X-Request-ID")),
 		)
 
-		strId := r.URL.Query().Get("schedule_id")
+		strId := c.Query("schedule_id")
 		if strId == "" {
 			logger.Error("missing parameter id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "missing parameter id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing parameter schedule_id"})
 			return
 		}
 
 		id, err := strconv.ParseInt(strId, 10, 64)
 		if err != nil || id <= 0 {
 			logger.Error("invalid parameter id", slog.Any("error", err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid parameter id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parameter schedule_id"})
 			return
 		}
 
-		userIdStr := r.URL.Query().Get("user_id")
+		userIdStr := c.Query("user_id")
 		if userIdStr == "" {
 			logger.Error("missing parameter user_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "missing parameter user_id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing parameter user_id"})
 			return
 		}
 
 		userId, err := strconv.ParseInt(userIdStr, 10, 64)
 		if err != nil || userId < 1 {
-			logger.Error("invalid parameter id", slog.Any("error", err))
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid parameter id")
+			logger.Error("invalid parameter user_id", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parameter user_id"})
 			return
 		}
 
 		med, err := db.GetMedicine(id)
-
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRows) {
-				log.Warn("Medicine not found", slog.Any("error", err))
-				w.WriteHeader(http.StatusNotFound)
-				render.JSON(w, r, "Medicine not found")
+				logger.Warn("Medicine not found", slog.Any("error", err))
+				c.JSON(http.StatusNotFound, gin.H{"error": "Medicine not found"})
 				return
 			}
 			logger.Error("error getting medicine", slog.Any("error", err))
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, "internal server error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
 
 		if med == nil {
-			w.WriteHeader(http.StatusNotFound)
-			render.JSON(w, r, "Medicine not found")
+			c.JSON(http.StatusNotFound, gin.H{"error": "Medicine not found"})
 			return
 		}
 
 		if userId != med.UserId {
 			logger.Error("invalid user id")
-			w.WriteHeader(http.StatusForbidden)
-			render.JSON(w, r, "invalid user id")
+			c.JSON(http.StatusForbidden, gin.H{"error": "invalid user id"})
 			return
 		}
 
 		schedule := reception.GetReceptionIntake(med)
 		med.Schedule = schedule
 
-		render.JSON(w, r, med)
+		c.JSON(http.StatusOK, med)
 	}
 }

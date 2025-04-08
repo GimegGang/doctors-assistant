@@ -3,8 +3,10 @@ package getNextTakings
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
 	"kode/internal/storage"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -21,16 +23,22 @@ func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error)
 		return nil, errors.New("error")
 	}
 
-	var medicines []*storage.Medicine
-	medicines = append(medicines, &storage.Medicine{
-		Id:                0,
-		Name:              "test",
-		TakingDuration:    2,
-		TreatmentDuration: 2,
-		UserId:            1,
-	})
+	return []*storage.Medicine{
+		{
+			Id:                0,
+			Name:              "test",
+			TakingDuration:    2,
+			TreatmentDuration: 2,
+			UserId:            1,
+		},
+	}, nil
+}
 
-	return medicines, nil
+func setupRouter(log *slog.Logger, db *MockDB, period time.Duration) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/schedules", GetNextTakingsHandler(log, db, period))
+	return r
 }
 
 func TestGetNextTakingsHandler(t *testing.T) {
@@ -73,6 +81,7 @@ func TestGetNextTakingsHandler(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			now := time.Now()
@@ -81,14 +90,18 @@ func TestGetNextTakingsHandler(t *testing.T) {
 			}
 			defer func() { timeNow = time.Now }()
 
-			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)
-			rr := httptest.NewRecorder()
 			mockDB := &MockDB{shouldError: tc.shouldError}
-			handler := GetNextTakingsHandler(logger.MustLoad("local"), mockDB, time.Hour*15)
-			handler.ServeHTTP(rr, req)
-			if rr.Code != tc.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, tc.expectedCode)
+			router := setupRouter(logger.MustLoad("local"), mockDB, time.Hour*15)
+
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)
+
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", w.Code, tc.expectedCode)
 			}
+
 			if tc.out != "" {
 				var exp, actual interface{}
 
@@ -97,7 +110,7 @@ func TestGetNextTakingsHandler(t *testing.T) {
 					t.Fatalf("Failed to unmarshal json: %v", err)
 				}
 
-				err = json.Unmarshal(rr.Body.Bytes(), &actual)
+				err = json.Unmarshal(w.Body.Bytes(), &actual)
 				if err != nil {
 					t.Fatalf("Failed to unmarshal json: %v", err)
 				}

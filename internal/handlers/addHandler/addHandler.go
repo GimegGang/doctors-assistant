@@ -1,8 +1,7 @@
 package addHandler
 
 import (
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
+	"github.com/gin-gonic/gin"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
@@ -16,36 +15,35 @@ type addScheduleResponse struct {
 	Id int64 `json:"id"`
 }
 
-func AddScheduleHandler(log *slog.Logger, db addSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func AddScheduleHandler(log *slog.Logger, db addSchedule) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const fun = "handler.AddScheduleHandler"
-		log.With(slog.String("fun", fun), slog.String("request_id", middleware.GetReqID(r.Context())))
+		log = log.With(
+			slog.String("fun", fun),
+			slog.String("request_id", c.GetHeader("X-Request-ID")),
+		)
 
 		var req storage.Medicine
 
-		if err := render.DecodeJSON(r.Body, &req); err != nil {
+		if err := c.BindJSON(&req); err != nil {
 			log.Error("error decoding request body", "err", err)
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid request")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
 
 		if req.Name == "" || req.TreatmentDuration <= 0 || req.TakingDuration <= 0 || req.UserId <= 0 {
 			log.Error("invalid request", "req", req)
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid request")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
 
 		id, err := db.AddMedicine(req)
-
 		if err != nil {
 			log.Error("error adding schedule", "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, "internal server error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
 
-		render.JSON(w, r, addScheduleResponse{Id: id})
+		c.JSON(http.StatusOK, addScheduleResponse{Id: id})
 	}
 }

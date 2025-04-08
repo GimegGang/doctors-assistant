@@ -34,7 +34,7 @@ func New(storagePath string) (*Storage, error) {
 
 	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS user_index ON medicine (user_id);`)
 	if err != nil {
-		return nil, fmt.Errorf("%s: failed to create index on medicine: %w", fun, err)
+		return nil, fmt.Errorf("%s: failed to createй index on medicine: %w", fun, err)
 	}
 
 	return &Storage{db}, nil

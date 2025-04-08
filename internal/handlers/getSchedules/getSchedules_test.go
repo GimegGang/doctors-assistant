@@ -2,7 +2,9 @@ package getSchedules
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,6 +19,13 @@ func (m *MockDB) GetMedicines(medId int64) ([]*int64, error) {
 		return nil, errors.New("error")
 	}
 	return []*int64{new(int64)}, nil
+}
+
+func setupRouter(log *slog.Logger, db *MockDB) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/schedules", GetSchedulesHandler(log, db))
+	return r
 }
 
 func TestGetSchedulesHandler(t *testing.T) {
@@ -48,13 +57,16 @@ func TestGetSchedulesHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)
-			rr := httptest.NewRecorder()
 			mockDB := &MockDB{shouldError: tc.shouldError}
-			handler := GetSchedulesHandler(logger.MustLoad("local"), mockDB)
-			handler.ServeHTTP(rr, req)
-			if rr.Code != tc.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, tc.expectedCode)
+			router := setupRouter(logger.MustLoad("local"), mockDB)
+
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)
+
+			router.ServeHTTP(w, req)
+
+			if w.Code != tc.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", w.Code, tc.expectedCode)
 			}
 		})
 	}

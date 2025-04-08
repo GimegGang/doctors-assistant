@@ -2,8 +2,7 @@ package getSchedules
 
 import (
 	"errors"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
+	"github.com/gin-gonic/gin"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
@@ -18,24 +17,22 @@ type getSchedulesResponse struct {
 	Schedules []*int64 `json:"schedules_id"`
 }
 
-func GetSchedulesHandler(log *slog.Logger, db getSchedules) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GetSchedulesHandler(log *slog.Logger, db getSchedules) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const fun = "handler.GetSchedulesHandler"
-		log.With(slog.String("fun", fun), slog.String("request_id", middleware.GetReqID(r.Context())))
+		log.With(slog.String("fun", fun), slog.String("request_id", c.GetHeader("X-Request-ID")))
 
-		userId := r.URL.Query().Get("user_id")
+		userId := c.Query("user_id")
 		if userId == "" {
 			log.Error("missing parameter user_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "missing parameter user_id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing parameter user_id"})
 			return
 		}
 
 		id, err := strconv.ParseInt(userId, 10, 64)
 		if err != nil {
 			log.Error("invalid parameter user_id")
-			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, "invalid parameter user_id")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parameter user_id"})
 			return
 		}
 
@@ -43,15 +40,14 @@ func GetSchedulesHandler(log *slog.Logger, db getSchedules) http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrNoRows) {
 				log.Warn("Medicine not found", slog.Any("error", err))
-				render.JSON(w, r, "Medicine not found")
+				c.JSON(http.StatusOK, gin.H{"error": "Medicine not found"})
 				return
 			}
 			log.Error("error getting schedules", "id", id, "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, "internal server error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error getting schedules"})
 			return
 		}
 
-		render.JSON(w, r, getSchedulesResponse{Schedules: schedules})
+		c.JSON(http.StatusOK, getSchedulesResponse{schedules})
 	}
 }
