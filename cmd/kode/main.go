@@ -32,7 +32,6 @@ func main() {
 	}
 	router := gin.New()
 
-	// Middleware (аналоги Chi)
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 	router.Use(func(c *gin.Context) {
