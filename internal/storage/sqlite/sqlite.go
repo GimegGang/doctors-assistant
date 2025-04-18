@@ -40,7 +40,7 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db}, nil
 }
 
-func (s *Storage) GetMedicines(medId int64) ([]*int64, error) {
+func (s *Storage) GetMedicines(medId int64) ([]int64, error) {
 	const fun = "internal/storage/mysql.GetSchedules"
 	rows, err := s.Query("SELECT id FROM medicine WHERE user_id = ?", medId)
 	if err != nil {
@@ -48,14 +48,14 @@ func (s *Storage) GetMedicines(medId int64) ([]*int64, error) {
 	}
 	defer rows.Close()
 
-	var res []*int64
+	var res []int64
 
 	for rows.Next() {
 		var id int64
 		if err = rows.Scan(&id); err != nil {
 			return nil, fmt.Errorf("%s: %w", fun, err)
 		}
-		res = append(res, &id)
+		res = append(res, id)
 	}
 
 	if len(res) == 0 {

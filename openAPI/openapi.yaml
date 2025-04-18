@@ -1,0 +1,268 @@
+openapi: 3.1.0
+info:
+  title: Medicine Scheduler API
+  version: '1.0.0'
+servers:
+  - url: http://localhost:8080
+    description: "Local Server"
+
+paths:
+  /schedule:
+    post:
+      summary: Add new medicine schedule
+      description: Creates a new medicine schedule with intake times
+      operationId: addSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicineRequest"
+            example:
+              name: "Aspirin"
+              taking_duration: 3
+              treatment_duration: 7
+              user_id: 123
+      responses:
+        '200':
+          description: Medicine schedule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddResponse"
+              example:
+                id: 42
+        '400':
+          description: |
+            Invalid request:
+            - Missing required fields
+            - Invalid durations (<= 0)
+            - Empty name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "invalid request"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "internal server error"
+
+    get:
+      summary: Get medicine details by ID
+      description: Returns full medicine schedule including calculated intake times
+      operationId: getSchedule
+      parameters:
+        - name: schedule_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID of the medicine schedule
+          example: 42
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID of the user
+          example: 123
+      responses:
+        '200':
+          description: Medicine schedule details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Medicine"
+              example:
+                id: 42
+                name: "Aspirin"
+                taking_duration: 3
+                treatment_duration: 7
+                user_id: 123
+                schedule: ["08:00", "12:00", "16:00"]
+                date: "2023-01-01T00:00:00Z"
+        '400':
+          description: Missing or invalid parameters
+        '403':
+          description: User ID doesn't match medicine owner
+        '404':
+          description: Medicine schedule not found
+        '500':
+          description: Internal server error
+
+  /schedules:
+    get:
+      summary: Get all medicine IDs for user
+      operationId: getSchedules
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID of the user
+          example: 123
+      responses:
+        '200':
+          description: List of medicine IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchedulesResponse"
+              example:
+                schedules_id: [42, 43, 44]
+        '400':
+          description: Missing or invalid user_id
+        '404':
+          description: No medicines found for this user
+        '500':
+          description: Internal server error
+
+  /next_takings:
+    get:
+      summary: Get upcoming medicine intake times
+      description: Returns medicines to be taken within configured time period
+      operationId: getNextTakings
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID of the user
+          example: 123
+      responses:
+        '200':
+          description: List of upcoming medicine intakes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NextTakings"
+              example:
+                medicines:
+                  - name: "Aspirin"
+                    time: "15:00"
+                  - name: "Ibuprofen"
+                    time: "16:30"
+        '400':
+          description: Missing or invalid user_id
+        '404':
+          description: No medicines found for this user
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    MedicineRequest:
+      type: object
+      required:
+        - name
+        - taking_duration
+        - treatment_duration
+        - user_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: "Aspirin"
+        taking_duration:
+          type: integer
+          minimum: 1
+          example: 3
+        treatment_duration:
+          type: integer
+          minimum: 1
+          example: 7
+        user_id:
+          type: integer
+          minimum: 1
+          example: 123
+
+    AddResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 42
+
+    SchedulesResponse:
+      type: object
+      required:
+        - schedules_id
+      properties:
+        schedules_id:
+          type: array
+          items:
+            type: integer
+          example: [42, 43, 44]
+
+    Medicine:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        name:
+          type: string
+          example: "Aspirin"
+        taking_duration:
+          type: integer
+          example: 3
+        treatment_duration:
+          type: integer
+          example: 7
+        user_id:
+          type: integer
+          example: 123
+        schedule:
+          type: array
+          items:
+            type: string
+          example: ["08:00", "12:00", "16:00"]
+        date:
+          type: string
+          format: date-time
+          example: "2023-01-01T00:00:00Z"
+
+    NextTakings:
+      type: object
+      required:
+        - medicines
+      properties:
+        medicines:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - time
+            properties:
+              name:
+                type: string
+                example: "Aspirin"
+              time:
+                type: string
+                pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+                example: "15:00"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid request"
+        details:
+          type: object
+          additionalProperties: true

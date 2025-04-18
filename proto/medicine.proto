@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package medicine;
+
+option go_package = "./proto/gen/medicine;medicineProto";
+
+service MedicineService{
+  rpc AddSchedule (AddScheduleRequest) returns (AddScheduleResponse);
+  rpc Schedules (SchedulesRequest) returns (SchedulesResponse);
+  rpc Schedule (ScheduleRequest) returns (ScheduleResponse);
+  rpc NextTakings (NextTakingsRequest) returns (NextTakingsResponse);
+}
+
+message AddScheduleRequest{
+  string name = 1;
+  int32 takingDuration = 2;
+  int32 treatmentDuration = 3;
+  int64 userId = 4;
+}
+
+message AddScheduleResponse{
+  int64 id = 1;
+}
+
+message SchedulesRequest{
+  int64 userId = 1;
+}
+
+message SchedulesResponse{
+  repeated int64 schedules_id = 1;
+}
+
+message ScheduleRequest{
+  int64 userId = 1;
+  int64 scheduleId = 2;
+}
+
+message ScheduleResponse{
+  int64 id = 1;
+  string name = 2;
+  int32 takingDuration = 3;
+  int32 treatmentDuration = 4;
+  int64 userId = 5;
+  repeated string schedule = 6;
+  string date = 7;
+}
+
+message NextTakingsResponse{
+  repeated Medicines medicines = 1;
+}
+message Medicines{
+  string name = 1;
+  string times = 2;
+}
+
+message NextTakingsRequest{
+  int64 user_id = 1;
+}

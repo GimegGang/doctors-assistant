@@ -10,11 +10,11 @@ import (
 )
 
 type getSchedules interface {
-	GetMedicines(medId int64) ([]*int64, error)
+	GetMedicines(medId int64) ([]int64, error)
 }
 
 type getSchedulesResponse struct {
-	Schedules []*int64 `json:"schedules_id"`
+	Schedules []int64 `json:"schedules_id"`
 }
 
 func GetSchedulesHandler(log *slog.Logger, db getSchedules) gin.HandlerFunc {
