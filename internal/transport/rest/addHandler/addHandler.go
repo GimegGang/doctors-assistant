@@ -1,21 +1,22 @@
 package addHandler
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
-type addSchedule interface {
-	AddMedicine(schedule storage.Medicine) (int64, error)
+type medService interface {
+	AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error)
 }
 
 type addScheduleResponse struct {
 	Id int64 `json:"id"`
 }
 
-func AddScheduleHandler(log *slog.Logger, db addSchedule) gin.HandlerFunc {
+func AddScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.AddScheduleHandler"
 		log = log.With(
@@ -37,7 +38,7 @@ func AddScheduleHandler(log *slog.Logger, db addSchedule) gin.HandlerFunc {
 			return
 		}
 
-		id, err := db.AddMedicine(req)
+		id, err := service.AddSchedule(c, req.Name, req.UserId, req.TakingDuration, req.TreatmentDuration)
 		if err != nil {
 			log.Error("error adding schedule", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})

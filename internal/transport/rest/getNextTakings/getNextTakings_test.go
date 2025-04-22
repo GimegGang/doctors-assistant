@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
+	medService2 "kode/internal/service/medService"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
@@ -34,10 +35,15 @@ func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error)
 	}, nil
 }
 
+func (m *MockDB) GetMedicines(medId int64) ([]int64, error)            { return []int64{}, nil }
+func (m *MockDB) GetMedicine(id int64) (*storage.Medicine, error)      { return &storage.Medicine{}, nil }
+func (m *MockDB) AddMedicine(schedule storage.Medicine) (int64, error) { return 0, nil }
+
 func setupRouter(log *slog.Logger, db *MockDB, period time.Duration) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/schedules", GetNextTakingsHandler(log, db, period))
+	service := medService2.New(log, db, time.Hour*24)
+	r.GET("/schedules", GetNextTakingsHandler(log, service))
 	return r
 }
 
@@ -54,7 +60,7 @@ func TestGetNextTakingsHandler(t *testing.T) {
 			input:        "user_id=1",
 			shouldError:  false,
 			expectedCode: http.StatusOK,
-			out:          `{"medicines":[{"name":"test","times":"08:00"},{"name":"test","times":"22:00"}]}`,
+			out:          `[{"name":"test","times":"08:00"},{"name":"test","times":"22:00"}]`,
 		},
 		{
 			name:         "empty time case",
@@ -91,7 +97,7 @@ func TestGetNextTakingsHandler(t *testing.T) {
 			defer func() { timeNow = time.Now }()
 
 			mockDB := &MockDB{shouldError: tc.shouldError}
-			router := setupRouter(logger.MustLoad("local"), mockDB, time.Hour*15)
+			router := setupRouter(logger.MustLoad("local"), mockDB, time.Hour*20)
 
 			w := httptest.NewRecorder()
 			req, _ := http.NewRequest(http.MethodGet, "/schedules?"+tc.input, nil)

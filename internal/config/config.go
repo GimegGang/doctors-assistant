@@ -9,7 +9,8 @@ import (
 
 type Config struct {
 	Env         string        `yaml:"env" required:"true"`
-	Address     string        `yaml:"address" required:"true"`
+	RestAddress int           `yaml:"rest_address" required:"true"`
+	GrpcAddress int           `yaml:"grpc_address" required:"true"`
 	StoragePath string        `yaml:"storage_path" required:"true"`
 	Timeout     time.Duration `yaml:"timeout" required:"true"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" required:"true"`

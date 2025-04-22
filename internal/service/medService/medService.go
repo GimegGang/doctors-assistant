@@ -2,6 +2,7 @@ package medService
 
 import (
 	"context"
+	"errors"
 	"kode/internal/reception"
 	"kode/internal/storage"
 	medicineProto "kode/proto/gen"
@@ -30,21 +31,14 @@ func New(log *slog.Logger, storage medStorage, period time.Duration) *MedService
 	}
 }
 
-//TODO обрабатывать ошибкаи и передовать нормально
-/*
-AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error)
-Schedules(ctx context.Context, userId int64) ([]int64, error)
-Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error)
-NextTakings(ctx context.Context, userId int64) ([]*medicineProto.Medicines, error)
-*/
 func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error) {
 	const fun = "medService.AddSchedule"
 	log := m.log.With(slog.String("fun", fun))
 
 	med := storage.Medicine{Name: name,
 		UserId:            userId,
-		TakingDuration:    int(takingDuration),
-		TreatmentDuration: int(treatmentDuration),
+		TakingDuration:    takingDuration,
+		TreatmentDuration: treatmentDuration,
 	}
 
 	id, err := m.storage.AddMedicine(med)
@@ -77,7 +71,10 @@ func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*s
 		log.Error("Error getting medicine", "error", err)
 		return nil, err
 	}
-	med.Schedule = reception.GetReceptionIntake(med)
+	if med == nil {
+		return nil, errors.New("medicine not found")
+	}
+	med.Schedule = reception.GetReceptionIntake(med.TakingDuration)
 	return med, err
 }
 
@@ -95,7 +92,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 	now := time.Now()
 	period := now.Add(m.period)
 	for _, medId := range med {
-		for _, t := range reception.GetReceptionIntake(medId) {
+		for _, t := range reception.GetReceptionIntake(medId.TakingDuration) {
 			intakeTime, err := time.Parse("15:04", t)
 			if err != nil {
 				log.Error("Error parsing time", "error", err)

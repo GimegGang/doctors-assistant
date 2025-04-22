@@ -3,9 +3,8 @@ package app
 import (
 	"fmt"
 	"google.golang.org/grpc"
-	"kode/internal/grpc/medicine"
 	"kode/internal/service/medService"
-	"kode/internal/storage/sqlite"
+	"kode/internal/transport/grpc/grpcServer"
 	"log/slog"
 	"net"
 	"time"
@@ -18,12 +17,10 @@ type App struct {
 	port       int
 }
 
-func New(log *slog.Logger, period time.Duration, port int, storage *sqlite.Storage) *App {
+func New(log *slog.Logger, period time.Duration, port int, service *medService.MedService) *App {
 	gRPCServer := grpc.NewServer()
 
-	service := medService.New(log, storage, period)
-
-	medicine.Register(gRPCServer, service)
+	grpcServer.Register(gRPCServer, service)
 
 	return &App{
 		log:        log,

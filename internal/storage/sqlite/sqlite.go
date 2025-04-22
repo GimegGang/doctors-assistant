@@ -59,7 +59,7 @@ func (s *Storage) GetMedicines(medId int64) ([]int64, error) {
 	}
 
 	if len(res) == 0 {
-		return res, storage.ErrNoRows
+		return res, storage.ErrNotFound
 	}
 
 	return res, nil
@@ -99,7 +99,7 @@ func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
 
 	if err = stmt.QueryRow(id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
-			return nil, storage.ErrNoRows
+			return nil, storage.ErrNotFound
 		}
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
@@ -137,7 +137,7 @@ func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error
 	}
 
 	if len(medicines) == 0 {
-		return nil, storage.ErrNoRows
+		return nil, storage.ErrNotFound
 	}
 
 	return medicines, nil

@@ -1,20 +1,19 @@
 package getSchedule
 
 import (
-	"errors"
+	"context"
 	"github.com/gin-gonic/gin"
-	"kode/internal/reception"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 	"strconv"
 )
 
-type getSchedule interface {
-	GetMedicine(id int64) (*storage.Medicine, error)
+type medService interface {
+	Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error)
 }
 
-func GetScheduleHandler(log *slog.Logger, db getSchedule) gin.HandlerFunc {
+func GetScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.GetScheduleHandler"
 		logger := log.With(
@@ -50,32 +49,12 @@ func GetScheduleHandler(log *slog.Logger, db getSchedule) gin.HandlerFunc {
 			return
 		}
 
-		med, err := db.GetMedicine(id)
+		med, err := service.Schedule(c, userId, id)
 		if err != nil {
-			if errors.Is(err, storage.ErrNoRows) {
-				logger.Warn("Medicine not found", slog.Any("error", err))
-				c.JSON(http.StatusNotFound, gin.H{"error": "Medicine not found"})
-				return
-			}
-			logger.Error("error getting medicine", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			logger.Error("get schedule error", slog.Any("error", err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
-		if med == nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Medicine not found"})
-			return
-		}
-
-		if userId != med.UserId {
-			logger.Error("invalid user id")
-			c.JSON(http.StatusForbidden, gin.H{"error": "invalid user id"})
-			return
-		}
-
-		schedule := reception.GetReceptionIntake(med)
-		med.Schedule = schedule
-
 		c.JSON(http.StatusOK, med)
 	}
 }

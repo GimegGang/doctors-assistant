@@ -1,4 +1,4 @@
-package medicine
+package grpcServer
 
 import (
 	"context"
@@ -60,8 +60,8 @@ func (s *serverAPI) Schedule(ctx context.Context, req *medicineProto.ScheduleReq
 	return &medicineProto.ScheduleResponse{
 		Id:                med.Id,
 		Name:              med.Name,
-		TakingDuration:    int32(med.TakingDuration),
-		TreatmentDuration: int32(med.TreatmentDuration),
+		TakingDuration:    med.TakingDuration,
+		TreatmentDuration: med.TreatmentDuration,
 		UserId:            med.UserId,
 		Schedule:          med.Schedule,
 		Date:              med.Date.String(),

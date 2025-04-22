@@ -29,7 +29,7 @@ func TestGetReceptionIntake(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res := GetReceptionIntake(tc.input)
+			res := GetReceptionIntake(tc.input.TakingDuration)
 			if len(res) != tc.expectedLen {
 				t.Errorf("GetReceptionIntake() returned wrong length: got %v want %v", len(res), tc.expectedLen)
 			}

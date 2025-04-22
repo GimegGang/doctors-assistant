@@ -14,11 +14,11 @@ type MockDB struct {
 	shouldError bool
 }
 
-func (m *MockDB) GetMedicines(medId int64) ([]*int64, error) {
+func (m *MockDB) GetMedicines(medId int64) ([]int64, error) {
 	if m.shouldError {
 		return nil, errors.New("error")
 	}
-	return []*int64{new(int64)}, nil
+	return []int64{3}, nil
 }
 
 func setupRouter(log *slog.Logger, db *MockDB) *gin.Engine {

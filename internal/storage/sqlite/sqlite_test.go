@@ -164,7 +164,7 @@ func TestGetMedicines(t *testing.T) {
 
 	found := false
 	for _, id := range ids {
-		if *id == id1 || *id == id2 {
+		if id == id1 || id == id2 {
 			found = true
 		}
 	}

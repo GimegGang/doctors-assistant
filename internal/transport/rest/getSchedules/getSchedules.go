@@ -1,6 +1,7 @@
 package getSchedules
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"kode/internal/storage"
@@ -9,15 +10,15 @@ import (
 	"strconv"
 )
 
-type getSchedules interface {
-	GetMedicines(medId int64) ([]int64, error)
+type medService interface {
+	Schedules(ctx context.Context, userId int64) ([]int64, error)
 }
 
 type getSchedulesResponse struct {
 	Schedules []int64 `json:"schedules_id"`
 }
 
-func GetSchedulesHandler(log *slog.Logger, db getSchedules) gin.HandlerFunc {
+func GetSchedulesHandler(log *slog.Logger, service medService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.GetSchedulesHandler"
 		log.With(slog.String("fun", fun), slog.String("request_id", c.GetHeader("X-Request-ID")))
@@ -36,9 +37,9 @@ func GetSchedulesHandler(log *slog.Logger, db getSchedules) gin.HandlerFunc {
 			return
 		}
 
-		schedules, err := db.GetMedicines(id)
+		schedules, err := service.Schedules(c, id)
 		if err != nil {
-			if errors.Is(err, storage.ErrNoRows) {
+			if errors.Is(err, storage.ErrNotFound) {
 				log.Warn("Medicine not found", slog.Any("error", err))
 				c.JSON(http.StatusOK, gin.H{"error": "Medicine not found"})
 				return

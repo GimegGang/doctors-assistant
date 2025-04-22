@@ -5,12 +5,14 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
+	medService2 "kode/internal/service/medService"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type MockDB struct {
@@ -30,10 +32,17 @@ func (m *MockDB) GetMedicine(id int64) (*storage.Medicine, error) {
 	}, nil
 }
 
+func (m *MockDB) GetMedicines(medId int64) ([]int64, error) { return []int64{}, nil }
+func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error) {
+	return []*storage.Medicine{}, nil
+}
+func (m *MockDB) AddMedicine(schedule storage.Medicine) (int64, error) { return 0, nil }
+
 func setupRouter(log *slog.Logger, db *MockDB) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/schedules", GetScheduleHandler(log, db))
+	service := medService2.New(log, db, time.Hour)
+	r.GET("/schedules", GetScheduleHandler(log, service))
 	return r
 }
 
@@ -64,7 +73,7 @@ func TestGetScheduleHandler(t *testing.T) {
 			name:         "error user_id input case",
 			input:        "schedule_id=1&user_id=5",
 			shouldError:  false,
-			expectedCode: http.StatusForbidden,
+			expectedCode: http.StatusInternalServerError,
 			out:          "",
 		},
 		{

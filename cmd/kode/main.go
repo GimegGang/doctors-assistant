@@ -3,15 +3,17 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"kode/internal/app"
 	"kode/internal/config"
-	"kode/internal/handlers/addHandler"
-	"kode/internal/handlers/getNextTakings"
-	"kode/internal/handlers/getSchedule"
-	"kode/internal/handlers/getSchedules"
 	"kode/internal/logger"
+	"kode/internal/service/medService"
 	"kode/internal/storage/sqlite"
+	"kode/internal/transport/rest/addHandler"
+	"kode/internal/transport/rest/getNextTakings"
+	"kode/internal/transport/rest/getSchedule"
+	"kode/internal/transport/rest/getSchedules"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,31 +45,33 @@ func main() {
 		c.Next()
 	})
 
-	router.POST("/schedule", addHandler.AddScheduleHandler(log, db))
-	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, db))
-	router.GET("/schedule", getSchedule.GetScheduleHandler(log, db))
-	router.GET("/next_takings", getNextTakings.GetNextTakingsHandler(log, db, cfg.TimePeriod))
+	service := medService.New(log, db, cfg.TimePeriod)
+
+	router.POST("/schedule", addHandler.AddScheduleHandler(log, service))
+	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, service))
+	router.GET("/schedule", getSchedule.GetScheduleHandler(log, service))
+	router.GET("/next_takings", getNextTakings.GetNextTakingsHandler(log, service))
 
 	srv := &http.Server{
-		Addr:         cfg.Address,
+		Addr:         fmt.Sprintf(":%d", cfg.RestAddress),
 		Handler:      router,
 		ReadTimeout:  cfg.Timeout,
 		WriteTimeout: cfg.Timeout,
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
-	grpc := app.New(log, cfg.TimePeriod, 1234, db)
-	go func() {
-		if err := grpc.Start(); err != nil {
-			log.Error("gRPC server failed", "error", err)
-		}
-	}()
-
 	serverErr := make(chan error, 1)
 	go func() {
 		log.Info("Start HTTP Server", slog.String("address", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
+		}
+	}()
+
+	grpc := app.New(log, cfg.TimePeriod, cfg.GrpcAddress, service)
+	go func() {
+		if err := grpc.Start(); err != nil {
+			log.Error("gRPC server failed", "error", err)
 		}
 	}()
 
