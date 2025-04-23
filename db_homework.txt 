@@ -1,0 +1,170 @@
+№2
+
+CREATE TABLE developers (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name TEXT NOT NULL,
+    department TEXT NOT NULL,
+    geolocation geography(POINT) NOT NULL,
+    last_known_ip INET NOT NULL,
+    is_available BOOLEAN NOT NULL
+);
+
+№3 Добавил тестовые данные.
+Ответ на запрос SELECT * FROM developers:
+
+0678a1d7-6d0e-4556-9de5-d2db07d861c8,James Smith,backend,"(54.7102,20.5101)",192.168.1.1,true
+8731b595-bbcb-4a10-b39b-a27fd5a43c4b,Mary Johnson,frontend,"(54.715,20.515)",192.168.1.2,false
+0040d66f-ea82-45cf-a761-59255756716b,John Williams,ios,"(54.72,20.52)",192.168.1.3,true
+4bc01515-960b-43f0-a3ce-8ba0ede41bc5,Patricia Brown,android,"(54.725,20.525)",192.168.1.4,false
+77bf0113-5c46-47a3-b9d7-03370164a0ba,Robert Jones,backend,"(54.73,20.53)",192.168.1.5,true
+eeaaea7d-7e02-4b29-8407-b67d45f1511f,James Johnson,frontend,"(54.735,20.535)",192.168.1.6,false
+7da8114f-f79c-497a-8f13-39919f4df050,Mary Smith,ios,"(54.74,20.54)",192.168.1.7,true
+6aaeb32e-6ae7-44b6-a7a4-0f78eb027030,John Brown,android,"(54.745,20.545)",192.168.1.8,false
+f0c910cd-976c-4b21-bce2-b9558fb0d797,Patricia Williams,backend,"(54.75,20.55)",192.168.1.9,true
+0df1e05b-7611-4283-80e9-250ab8f4f0d6,Robert Johnson,frontend,"(54.755,20.555)",192.168.1.10,false
+639d2d36-1d9c-4913-b696-f0b2b78c2e5c,James Brown,ios,"(54.76,20.56)",192.168.1.11,true
+e3ae5eac-19ac-43f5-86b0-cda1f5bad82f,Mary Williams,android,"(54.765,20.565)",192.168.1.12,false
+61a81c84-1120-435b-a4c1-2764ad3b4f31,John Smith,backend,"(54.77,20.57)",192.168.1.13,true
+6e3d84cd-d80f-40ce-a023-002fdf33c9f3,Patricia Johnson,frontend,"(54.775,20.575)",192.168.1.14,false
+ee1ba4c7-6c96-4874-8d1f-a513e392e7ff,Robert Williams,ios,"(54.78,20.58)",192.168.1.15,true
+d36fed6c-33cf-4da7-b5f1-6de82ebf2742,James Jones,android,"(54.785,20.585)",192.168.1.16,false
+5ad344cc-4207-4556-b607-271f0b527b20,Mary Brown,backend,"(54.79,20.59)",192.168.1.17,true
+68af1194-4eda-4c4d-8fe6-2340653b6b37,John Jones,frontend,"(54.795,20.595)",192.168.1.18,false
+4ee39cdc-3e02-4f12-9957-ff14cf9ba248,Patricia Smith,ios,"(54.8,20.6)",192.168.1.19,true
+8e6288c1-00e8-43ec-878d-3bd124d04db9,Robert Brown,android,"(54.805,20.605)",192.168.1.20,false
+
+
+№3*
+//ССЫЛКА на test.sql
+
+№4
+
+1) EXPLAIN ANALYSE SELECT * FROM developers WHERE name LIKE 'James%';
+
+Seq Scan on developers  (cost=0.00..188.10 rows=30 width=129) (actual time=0.011..1.892 rows=2004 loops=1)
+  Filter: (name ~~ 'James%'::text)
+  Rows Removed by Filter: 8016
+Planning Time: 0.154 ms
+Execution Time: 2.105 ms
+
+2) EXPLAIN ANALYSE SELECT * FROM developers WHERE department = 'backend';
+
+Seq Scan on developers  (cost=0.00..188.10 rows=30 width=129) (actual time=0.020..2.798 rows=2505 loops=1)
+  Filter: (department = 'backend'::text)
+  Rows Removed by Filter: 7515
+Planning Time: 0.129 ms
+Execution Time: 2.948 ms
+
+3) EXPLAIN ANALYSE SELECT * FROM developers WHERE last_known_ip = '192.168.1.10';
+
+Seq Scan on developers  (cost=0.00..188.10 rows=30 width=129) (actual time=0.054..3.059 rows=1 loops=1)
+  Filter: (last_known_ip = '192.168.1.10'::inet)
+  Rows Removed by Filter: 10019
+Planning Time: 0.202 ms
+Execution Time: 3.087 ms
+
+
+4) EXPLAIN ANALYSE SELECT * FROM developers WHERE is_available = TRUE;
+
+Seq Scan on developers  (cost=0.00..173.28 rows=2964 width=129) (actual time=0.014..1.838 rows=5092 loops=1)
+  Filter: is_available
+  Rows Removed by Filter: 4928
+Planning Time: 0.120 ms
+Execution Time: 2.079 ms
+
+
+№4*
+SELECT name, department,
+       ST_AsText(geolocation) AS coordinates,
+       ST_Distance(geolocation, ST_MakePoint(54.710162, 20.510137)::geography) / 1000 AS distance_km
+FROM developers
+WHERE ST_DWithin(
+              geolocation,
+              ST_MakePoint(54.710162, 20.510137)::geography,
+              1000000 -- увеличил радиус поиска, т.к в радиусе 10км записей не было
+      )
+ORDER BY distance_km;
+
+№5
+CREATE INDEX idx_developers_name ON developers USING btree (name varchar_pattern_ops); // классовый оператор varchar_pattern_ops - предоствляет более быстрый поиск по шаблонам
+CREATE INDEX idx_developers_department ON developers USING btree (department);
+CREATE INDEX idx_developers_ip ON developers USING gist (last_known_ip inet_ops); // по неким историческим причинам inet_ops не встает по умолчанию
+CREATE INDEX idx_developers_available ON developers USING btree (is_available);
+
+№6
+1) EXPLAIN ANALYSE SELECT * FROM developers WHERE name LIKE 'James%';
+
+Bitmap Heap Scan on developers  (cost=4.80..96.94 rows=50 width=129) (actual time=0.441..1.179 rows=2004 loops=1)
+  Filter: (name ~~ 'James%'::text)
+  Heap Blocks: exact=113
+  ->  Bitmap Index Scan on idx_developers_name  (cost=0.00..4.79 rows=50 width=0) (actual time=0.415..0.415 rows=2004 loops=1)
+        Index Cond: ((name ~>=~ 'James'::text) AND (name ~<~ 'Jamet'::text))
+Planning Time: 2.003 ms
+Execution Time: 1.326 ms
+
+2) EXPLAIN ANALYSE SELECT * FROM developers WHERE department = 'backend';
+Bitmap Heap Scan on developers  (cost=4.67..96.82 rows=50 width=129) (actual time=1.212..2.026 rows=2505 loops=1)
+  Recheck Cond: (department = 'backend'::text)
+  Heap Blocks: exact=114
+  ->  Bitmap Index Scan on idx_developers_department  (cost=0.00..4.66 rows=50 width=0) (actual time=1.183..1.183 rows=2505 loops=1)
+        Index Cond: (department = 'backend'::text)
+Planning Time: 0.366 ms
+Execution Time: 2.181 ms
+
+3) EXPLAIN ANALYSE SELECT * FROM developers WHERE last_known_ip = '192.168.1.10';
+Bitmap Heap Scan on developers  (cost=4.54..96.68 rows=50 width=129) (actual time=0.045..0.046 rows=1 loops=1)
+  Recheck Cond: (last_known_ip = '192.168.1.10'::inet)
+  Heap Blocks: exact=1
+  ->  Bitmap Index Scan on idx_developers_ip  (cost=0.00..4.53 rows=50 width=0) (actual time=0.035..0.035 rows=1 loops=1)
+        Index Cond: (last_known_ip = '192.168.1.10'::inet)
+Planning Time: 0.213 ms
+Execution Time: 0.142 ms
+
+4) EXPLAIN ANALYSE SELECT * FROM developers WHERE is_available = TRUE;
+Seq Scan on developers  (cost=0.00..214.20 rows=5010 width=129) (actual time=0.019..3.267 rows=5092 loops=1)
+  Filter: is_available
+  Rows Removed by Filter: 4928
+Planning Time: 0.269 ms
+Execution Time: 3.650 ms
+
+Можно сделать следующие выводы:
+1 - использование индекса ускорило выполнение запроса почти на 60%
+2 - использование индекса ускорило выполнение запроса на 35%
+3 - использование индекса ускорило выполнение запроса на 2000%
+4 - postgres отказался использовать индекс для поиска (скорее всего изза того что у нас примерно равное распределение между true и false)
+
+-----------------
+EXPLAIN ANALYSE SELECT name, department,
+       ST_AsText(geolocation) AS coordinates,
+       ST_Distance(geolocation, ST_MakePoint(54.710162, 20.510137)::geography) / 1000 AS distance_km
+FROM developers
+WHERE ST_DWithin(
+              geolocation,
+              ST_MakePoint(54.710162, 20.510137)::geography,
+              1000000  --
+      )
+ORDER BY distance_km;
+
+Sort  (cost=125243.14..125243.14 rows=1 width=104) (actual time=31.860..31.862 rows=36 loops=1)
+"  Sort Key: ((st_distance(geolocation, '0101000020E6100000546EA296E65A4B40C47AA35698823440'::geography, true) / '1000'::double precision))"
+  Sort Method: quicksort  Memory: 30kB
+  ->  Seq Scan on developers  (cost=0.00..125243.13 rows=1 width=104) (actual time=1.859..31.814 rows=36 loops=1)
+"        Filter: st_dwithin(geolocation, '0101000020E6100000546EA296E65A4B40C47AA35698823440'::geography, '1000000'::double precision, true)"
+        Rows Removed by Filter: 9964
+Planning Time: 0.848 ms
+Execution Time: 31.904 ms
+
+Создаю индекс
+CREATE INDEX idx_developers_geolocation ON developers USING gist (geolocation);
+
+Sort  (cost=33.93..33.93 rows=1 width=104) (actual time=0.589..0.592 rows=36 loops=1)
+"  Sort Key: ((st_distance(geolocation, '0101000020E6100000546EA296E65A4B40C47AA35698823440'::geography, true) / '1000'::double precision))"
+  Sort Method: quicksort  Memory: 30kB
+  ->  Index Scan using idx_developers_geolocation on developers  (cost=0.28..33.92 rows=1 width=104) (actual time=0.111..0.552 rows=36 loops=1)
+"        Index Cond: (geolocation && _st_expand('0101000020E6100000546EA296E65A4B40C47AA35698823440'::geography, '1000000'::double precision))"
+"        Filter: st_dwithin(geolocation, '0101000020E6100000546EA296E65A4B40C47AA35698823440'::geography, '1000000'::double precision, true)"
+        Rows Removed by Filter: 35
+Planning Time: 0.870 ms
+Execution Time: 0.752 ms
+
+Итого прирост на 4000%
