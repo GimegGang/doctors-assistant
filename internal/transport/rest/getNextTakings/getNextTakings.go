@@ -1,18 +1,13 @@
 package getNextTakings
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
-	medicineProto "kode/proto/gen"
+	"kode/internal/service"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 )
-
-type medService interface {
-	NextTakings(ctx context.Context, userId int64) ([]*medicineProto.Medicines, error)
-}
 
 type medicine struct {
 	Name string `json:"name"`
@@ -27,7 +22,7 @@ func (a ByTime) Less(i, j int) bool { return a[i].Time < a[j].Time }
 
 var timeNow = time.Now // переменная для подмены в тестах
 
-func GetNextTakingsHandler(log *slog.Logger, service medService) gin.HandlerFunc {
+func GetNextTakingsHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handlers.NextTakingsHandler"
 		log = log.With(

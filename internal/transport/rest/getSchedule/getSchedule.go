@@ -1,19 +1,14 @@
 package getSchedule
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
-	"kode/internal/storage"
+	"kode/internal/service"
 	"log/slog"
 	"net/http"
 	"strconv"
 )
 
-type medService interface {
-	Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error)
-}
-
-func GetScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
+func GetScheduleHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.GetScheduleHandler"
 		logger := log.With(

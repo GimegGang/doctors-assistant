@@ -1,24 +1,20 @@
 package getSchedules
 
 import (
-	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"kode/internal/service"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 	"strconv"
 )
 
-type medService interface {
-	Schedules(ctx context.Context, userId int64) ([]int64, error)
-}
-
 type getSchedulesResponse struct {
 	Schedules []int64 `json:"schedules_id"`
 }
 
-func GetSchedulesHandler(log *slog.Logger, service medService) gin.HandlerFunc {
+func GetSchedulesHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.GetSchedulesHandler"
 		log.With(slog.String("fun", fun), slog.String("request_id", c.GetHeader("X-Request-ID")))

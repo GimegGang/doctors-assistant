@@ -1,22 +1,18 @@
 package addHandler
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
+	"kode/internal/service"
 	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 )
 
-type medService interface {
-	AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error)
-}
-
 type addScheduleResponse struct {
 	Id int64 `json:"id"`
 }
 
-func AddScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
+func AddScheduleHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.AddScheduleHandler"
 		log = log.With(
