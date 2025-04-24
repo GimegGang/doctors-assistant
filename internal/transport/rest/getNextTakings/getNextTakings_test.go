@@ -1,6 +1,7 @@
 package getNextTakings
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ type MockDB struct {
 	shouldError bool
 }
 
-func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error) {
+func (m *MockDB) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
 	if m.shouldError {
 		return nil, errors.New("error")
 	}
@@ -35,9 +36,15 @@ func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error)
 	}, nil
 }
 
-func (m *MockDB) GetMedicines(medId int64) ([]int64, error)            { return []int64{}, nil }
-func (m *MockDB) GetMedicine(id int64) (*storage.Medicine, error)      { return &storage.Medicine{}, nil }
-func (m *MockDB) AddMedicine(schedule storage.Medicine) (int64, error) { return 0, nil }
+func (m *MockDB) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
+	return []int64{}, nil
+}
+func (m *MockDB) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+	return &storage.Medicine{}, nil
+}
+func (m *MockDB) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+	return 0, nil
+}
 
 func setupRouter(log *slog.Logger, db *MockDB, period time.Duration) *gin.Engine {
 	gin.SetMode(gin.TestMode)

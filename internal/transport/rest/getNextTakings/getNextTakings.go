@@ -32,7 +32,6 @@ func GetNextTakingsHandler(log *slog.Logger, service medService) gin.HandlerFunc
 		const fun = "handlers.NextTakingsHandler"
 		log = log.With(
 			slog.String("fun", fun),
-			slog.String("request_id", c.GetHeader("X-Request-ID")),
 		)
 
 		strId := c.Query("user_id")

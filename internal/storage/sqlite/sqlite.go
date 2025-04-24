@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -40,9 +41,9 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db}, nil
 }
 
-func (s *Storage) GetMedicines(medId int64) ([]int64, error) {
+func (s *Storage) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
 	const fun = "internal/storage/mysql.GetSchedules"
-	rows, err := s.Query("SELECT id FROM medicine WHERE user_id = ?", medId)
+	rows, err := s.QueryContext(ctx, "SELECT id FROM medicine WHERE user_id = ?", medId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
@@ -65,7 +66,7 @@ func (s *Storage) GetMedicines(medId int64) ([]int64, error) {
 	return res, nil
 }
 
-func (s *Storage) AddMedicine(schedule storage.Medicine) (int64, error) {
+func (s *Storage) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
 	const fun = "internal/storage/mysql.AddSchedule"
 
 	stmt, err := s.Prepare(`INSERT INTO medicine (name, taking_duration, treatment_duration, user_id, date) values (?, ?, ?, ?, ?)`)
@@ -74,7 +75,7 @@ func (s *Storage) AddMedicine(schedule storage.Medicine) (int64, error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now())
+	res, err := stmt.ExecContext(ctx, schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now())
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
@@ -86,7 +87,7 @@ func (s *Storage) AddMedicine(schedule storage.Medicine) (int64, error) {
 	return lastID, nil
 }
 
-func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
+func (s *Storage) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
 	const fun = "internal/storage/mysql.GetSchedule"
 
 	stmt, err := s.Prepare("SELECT * FROM medicine WHERE id = ?")
@@ -97,7 +98,7 @@ func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
 
 	var res storage.Medicine
 
-	if err = stmt.QueryRow(id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
+	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
 			return nil, storage.ErrNotFound
 		}
@@ -105,16 +106,16 @@ func (s *Storage) GetMedicine(id int64) (*storage.Medicine, error) {
 	}
 
 	if time.Now().After(res.Date.Add((time.Hour * 24) * time.Duration(res.TreatmentDuration))) {
-		return nil, nil
+		return nil, storage.ErrNotFound
 	}
 
 	return &res, nil
 }
 
-func (s *Storage) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error) {
+func (s *Storage) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
 	const fun = "internal/storage/sqlite.GetMedicinesByUserID"
 
-	rows, err := s.Query(`
+	rows, err := s.QueryContext(ctx, `
         SELECT id, name, taking_duration, treatment_duration, user_id, date 
         FROM medicine 
         WHERE user_id = ?

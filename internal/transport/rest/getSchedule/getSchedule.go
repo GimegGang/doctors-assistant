@@ -18,7 +18,6 @@ func GetScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
 		const fun = "handler.GetScheduleHandler"
 		logger := log.With(
 			slog.String("fun", fun),
-			slog.String("request_id", c.GetHeader("X-Request-ID")),
 		)
 
 		strId := c.Query("schedule_id")

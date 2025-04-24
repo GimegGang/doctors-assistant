@@ -1,30 +1,44 @@
 package getSchedules
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"kode/internal/logger"
+	medService2 "kode/internal/service/medService"
+	"kode/internal/storage"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 type MockDB struct {
 	shouldError bool
 }
 
-func (m *MockDB) GetMedicines(medId int64) ([]int64, error) {
+func (m *MockDB) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
 	if m.shouldError {
 		return nil, errors.New("error")
 	}
 	return []int64{3}, nil
 }
+func (m *MockDB) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+	return &storage.Medicine{}, nil
+}
+func (m *MockDB) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
+	return []*storage.Medicine{}, nil
+}
+func (m *MockDB) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+	return 0, nil
+}
 
 func setupRouter(log *slog.Logger, db *MockDB) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/schedules", GetSchedulesHandler(log, db))
+	service := medService2.New(log, db, time.Hour)
+	r.GET("/schedules", GetSchedulesHandler(log, service))
 	return r
 }
 

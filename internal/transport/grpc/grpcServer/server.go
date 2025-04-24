@@ -26,10 +26,10 @@ func Register(s *grpc.Server, medService medService) {
 }
 
 func (s *serverAPI) AddSchedule(ctx context.Context, req *medicineProto.AddScheduleRequest) (*medicineProto.AddScheduleResponse, error) {
+
 	if req.GetName() == "" || req.GetUserId() < 0 || req.GetTakingDuration() < 0 || req.GetTreatmentDuration() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}
-
 	id, err := s.medService.AddSchedule(ctx, req.GetName(), req.GetUserId(), req.GetTakingDuration(), req.GetTreatmentDuration())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -56,7 +56,7 @@ func (s *serverAPI) Schedule(ctx context.Context, req *medicineProto.ScheduleReq
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	//TODO измениить в med тип с int на int32
+
 	return &medicineProto.ScheduleResponse{
 		Id:                med.Id,
 		Name:              med.Name,

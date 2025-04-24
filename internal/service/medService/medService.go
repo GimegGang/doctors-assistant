@@ -2,7 +2,7 @@ package medService
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"kode/internal/reception"
 	"kode/internal/storage"
 	medicineProto "kode/proto/gen"
@@ -11,10 +11,10 @@ import (
 )
 
 type medStorage interface {
-	AddMedicine(schedule storage.Medicine) (int64, error)
-	GetMedicines(medId int64) ([]int64, error)
-	GetMedicine(id int64) (*storage.Medicine, error)
-	GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error)
+	AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error)
+	GetMedicines(ctx context.Context, medId int64) ([]int64, error)
+	GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error)
+	GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error)
 }
 
 type MedService struct {
@@ -41,7 +41,7 @@ func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64,
 		TreatmentDuration: treatmentDuration,
 	}
 
-	id, err := m.storage.AddMedicine(med)
+	id, err := m.storage.AddMedicine(ctx, med)
 	if err != nil {
 		log.Error("Error adding medicine", "error", err)
 		return 0, err
@@ -54,7 +54,7 @@ func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, erro
 	const fun = "medService.Schedules"
 	log := m.log.With(slog.String("fun", fun))
 
-	ids, err := m.storage.GetMedicines(userId)
+	ids, err := m.storage.GetMedicines(ctx, userId)
 	if err != nil {
 		log.Error("Error getting medicines", "error", err)
 		return nil, err
@@ -66,13 +66,16 @@ func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, erro
 func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error) {
 	const fun = "medService.Schedule"
 	log := m.log.With(slog.String("fun", fun))
-	med, err := m.storage.GetMedicine(userId)
+	med, err := m.storage.GetMedicine(ctx, scheduleId)
 	if err != nil {
 		log.Error("Error getting medicine", "error", err)
 		return nil, err
 	}
 	if med == nil {
-		return nil, errors.New("medicine not found")
+		return nil, storage.ErrNotFound
+	}
+	if med.UserId != userId {
+		return nil, fmt.Errorf("schedule does not belong to the user")
 	}
 	med.Schedule = reception.GetReceptionIntake(med.TakingDuration)
 	return med, err
@@ -82,7 +85,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 	const fun = "medService.NextTakings"
 	log := m.log.With(slog.String("fun", fun))
 
-	med, err := m.storage.GetMedicinesByUserID(userId)
+	med, err := m.storage.GetMedicinesByUserID(ctx, userId)
 	if err != nil {
 		log.Error("Error getting medicines", "error", err)
 		return nil, err

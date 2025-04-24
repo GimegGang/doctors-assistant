@@ -1,118 +1,127 @@
 ```mermaid
 classDiagram
-    %%  Уровень Entities
+%% Entities
     class Medicine {
         <<Entity>>
-        +Id int64
-        +Name string
-        +TakingDuration int
-        +TreatmentDuration int
-        +UserId int64
-        +Date time.Time
+        +Id: int64
+        +Name: string
+        +TakingDuration: int32
+        +TreatmentDuration: int32
+        +UserId: int64
+        +Schedule: []string
+        +Date: time.Time
     }
 
-    %%  Уровень Use Cases
-    class AddHandler {
-        <<UseCase>>
-        +AddScheduleHandler(*slog.Logger, Storage) gin.HandlerFunc
-        -Валидация запроса
-        -Создание Medicine
-        -Обработка ошибок
+%% Use Cases
+    class MedService {
+        <<Service>>
+        -log: *slog.Logger
+        -storage: medStorage
+        -period: time.Duration
+        +AddSchedule(context.Context, string, int64, int32, int32) (int64, error)
+        +Schedules(context.Context, int64) ([]int64, error)
+        +Schedule(context.Context, int64, int64) (*Medicine, error)
+        +NextTakings(context.Context, int64) ([]*medicineProto.Medicines, error)
     }
 
-    class GetNextTakingsHandler {
-       <<UseCase>>
-        +GetNextTakingsHandler(*slog.Logger, Storage, time.Duration) gin.HandlerFunc
-        -Расчёт времени приёмов
-        -Конкурентная обработка
-        -Сортировка результатов
-    }
-
-    class GetScheduleHandler {
-        <<UseCase>>
-        +GetScheduleHandler(*slog.Logger, Storage) gin.HandlerFunc
-        -Проверка прав доступа
-        -Генерация расписания
-    }
-
-    class GetSchedulesHandler {
-       <<UseCase>>
-        +GetSchedulesHandler(*slog.Logger, Storage) gin.HandlerFunc
-        -Получение списка ID
-        -Фильтрация по дате
-    }
-
-    %% Уровень Interfaces
-    class Storage{
+%% Interfaces
+    class medStorage {
         <<Interface>>
         +AddMedicine(Medicine) (int64, error)
+        +GetMedicines(int64) ([]int64, error)
         +GetMedicine(int64) (*Medicine, error)
-        +GetMedicines(int64) ([]*int64, error)
         +GetMedicinesByUserID(int64) ([]*Medicine, error)
     }
 
-    class ConfigLoader{
-        <<Interface>>
-        +MustLoad(string) *Config
-    }
-
-    %% Уровень Infrastructure
+%% Infrastructure
     class SQLiteStorage {
-        <<Infrastructure>>
-        -db *sql.DB
+        <<Repository>>
+        -db: *sql.DB
         +New(string) (*Storage, error)
         +AddMedicine(Medicine) (int64, error)
+        +GetMedicines(int64) ([]int64, error)
         +GetMedicine(int64) (*Medicine, error)
-        +GetMedicines(int64) ([]*int64, error)
         +GetMedicinesByUserID(int64) ([]*Medicine, error)
     }
 
     class Logger {
-        <<Infrastructure>>
+        <<Utility>>
         +MustLoad(string) *slog.Logger
     }
 
-    class GinRouter {
-        <<Infrastructure>>
-        +Use(...gin.HandlerFunc)
-        +POST(string, gin.HandlerFunc)
-        +GET(string, gin.HandlerFunc)
-        -Настройка middleware
+    class Reception {
+        <<Utility>>
+        +GetReceptionIntake(int32) []string
     }
 
     class Config {
-        <<Infrastructure>>
-        +Env string
-        +Address string
-        +StoragePath string
-        +Timeout time.Duration
-        +IdleTimeout time.Duration
-        +TimePeriod time.Duration
+        <<Configuration>>
+        +Env: string
+        +RestAddress: int
+        +GrpcAddress: int
+        +StoragePath: string
+        +Timeout: time.Duration
+        +IdleTimeout: time.Duration
+        +TimePeriod: time.Duration
     }
 
-    class Reception {
-        <<Infrastructure>>
-        +GetReceptionIntake(*Medicine) []string
+    class App {
+        <<Application>>
+        -log: *slog.Logger
+        -period: time.Duration
+        -gRPCServer: *grpc.Server
+        -port: int
+        +New(*slog.Logger, time.Duration, int, *MedService) *App
+        +Start() error
+        +Stop()
     }
 
-    SQLiteStorage ..|> Storage : реализует
-    Config ..|> ConfigLoader : реализует (неявно)
+%% Handlers
+class AddScheduleHandler { 
+%%    <<HTTP Handler>>
+    +Handler(*slog.Logger, medService) gin.HandlerFunc
+}
 
-    AddHandler --> Storage : зависит
-    GetNextTakingsHandler --> Storage : зависит
-    GetScheduleHandler --> Storage : зависит
-    GetSchedulesHandler --> Storage : зависит
+class GetSchedulesHandler {
+%%<<HTTP Handler>>
++Handler(*slog.Logger, medService) gin.HandlerFunc
+}
 
-    GetNextTakingsHandler --> Reception : использует
-    Medicine <-- Storage : возвращает/принимает
+class GetScheduleHandler {
+%%<<HTTP Handler>>
++Handler(*slog.Logger, medService) gin.HandlerFunc
+}
 
-    GinRouter --> AddHandler : регистрирует
-    GinRouter --> GetNextTakingsHandler : регистрирует
-    GinRouter --> GetScheduleHandler : регистрирует
-    GinRouter --> GetSchedulesHandler : регистрирует
+class GetNextTakingsHandler {
+%%<<HTTP Handler>>
++Handler(*slog.Logger, medService) gin.HandlerFunc
+}
 
-    main --> Config : создаёт
-    main --> Logger : создаёт
-    main --> SQLiteStorage : создаёт
-    main --> GinRouter : создаёт
+class grpcServer {
+%%<<gRPC Server>>
++Register(*grpc.Server, medService)
+}
+
+%% Relationships
+SQLiteStorage ..|> medStorage : implements
+MedService --> medStorage : depends
+MedService --> Reception : uses
+
+AddScheduleHandler --> MedService : depends
+GetSchedulesHandler --> MedService : depends
+GetScheduleHandler --> MedService : depends
+GetNextTakingsHandler --> MedService : depends
+
+App --> MedService : depends
+App --> grpcServer : uses
+
+main --> Config : creates
+main --> Logger : creates
+main --> SQLiteStorage : creates
+main --> MedService : creates
+main --> App : creates
+main --> AddScheduleHandler : registers
+main --> GetSchedulesHandler : registers
+main --> GetScheduleHandler : registers
+main --> GetNextTakingsHandler : registers
 ```

@@ -21,7 +21,6 @@ func AddScheduleHandler(log *slog.Logger, service medService) gin.HandlerFunc {
 		const fun = "handler.AddScheduleHandler"
 		log = log.With(
 			slog.String("fun", fun),
-			slog.String("request_id", c.GetHeader("X-Request-ID")),
 		)
 
 		var req storage.Medicine

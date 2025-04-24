@@ -2,6 +2,7 @@ package addHandler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -20,15 +21,19 @@ type MockDB struct {
 	shouldError bool
 }
 
-func (m *MockDB) AddMedicine(schedule storage.Medicine) (int64, error) {
+func (m *MockDB) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
 	if m.shouldError {
 		return 0, errors.New("error")
 	}
 	return 1, nil
 }
-func (m *MockDB) GetMedicines(medId int64) ([]int64, error)       { return []int64{}, nil }
-func (m *MockDB) GetMedicine(id int64) (*storage.Medicine, error) { return &storage.Medicine{}, nil }
-func (m *MockDB) GetMedicinesByUserID(userID int64) ([]*storage.Medicine, error) {
+func (m *MockDB) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
+	return []int64{}, nil
+}
+func (m *MockDB) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+	return &storage.Medicine{}, nil
+}
+func (m *MockDB) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
 	return []*storage.Medicine{}, nil
 }
 
