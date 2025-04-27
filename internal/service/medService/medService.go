@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kode/internal/reception"
 	"kode/internal/storage"
+	"kode/internal/transport/rest/middleware"
 	medicineProto "kode/proto/gen"
 	"log/slog"
 	"time"
@@ -33,7 +34,7 @@ func New(log *slog.Logger, storage medStorage, period time.Duration) *MedService
 
 func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error) {
 	const fun = "medService.AddSchedule"
-	log := m.log.With(slog.String("fun", fun))
+	log := m.serviceLogger(ctx, fun)
 
 	med := storage.Medicine{Name: name,
 		UserId:            userId,
@@ -52,7 +53,7 @@ func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64,
 
 func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, error) {
 	const fun = "medService.Schedules"
-	log := m.log.With(slog.String("fun", fun))
+	log := m.serviceLogger(ctx, fun)
 
 	ids, err := m.storage.GetMedicines(ctx, userId)
 	if err != nil {
@@ -65,7 +66,8 @@ func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, erro
 
 func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error) {
 	const fun = "medService.Schedule"
-	log := m.log.With(slog.String("fun", fun))
+	log := m.serviceLogger(ctx, fun)
+
 	med, err := m.storage.GetMedicine(ctx, scheduleId)
 	if err != nil {
 		log.Error("Error getting medicine", "error", err)
@@ -83,7 +85,7 @@ func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*s
 
 func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicineProto.Medicines, error) {
 	const fun = "medService.NextTakings"
-	log := m.log.With(slog.String("fun", fun))
+	log := m.serviceLogger(ctx, fun)
 
 	med, err := m.storage.GetMedicinesByUserID(ctx, userId)
 	if err != nil {
@@ -114,4 +116,14 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 		}
 	}
 	return res, nil
+}
+
+func (m *MedService) serviceLogger(ctx context.Context, fun string) *slog.Logger {
+	log := m.log.With(slog.String("fun", fun))
+
+	if traceID := middleware.GetTraceID(ctx); traceID != "" {
+		log = log.With(slog.String("trace-id", traceID))
+	}
+
+	return log
 }

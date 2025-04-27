@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"kode/internal/service"
 	"kode/internal/storage"
+	"kode/internal/transport/rest/middleware"
 	"log/slog"
 	"net/http"
 )
@@ -15,9 +16,7 @@ type addScheduleResponse struct {
 func AddScheduleHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.AddScheduleHandler"
-		log = log.With(
-			slog.String("fun", fun),
-		)
+		log = log.With(slog.String("fun", fun), slog.String("trace-id", middleware.GetTraceID(c.Request.Context())))
 
 		var req storage.Medicine
 
@@ -33,13 +32,12 @@ func AddScheduleHandler(log *slog.Logger, service service.MedServiceInterface) g
 			return
 		}
 
-		id, err := service.AddSchedule(c, req.Name, req.UserId, req.TakingDuration, req.TreatmentDuration)
+		id, err := service.AddSchedule(c.Request.Context(), req.Name, req.UserId, req.TakingDuration, req.TreatmentDuration)
 		if err != nil {
 			log.Error("error adding schedule", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
-
 		c.JSON(http.StatusOK, addScheduleResponse{Id: id})
 	}
 }

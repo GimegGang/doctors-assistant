@@ -3,6 +3,7 @@ package getNextTakings
 import (
 	"github.com/gin-gonic/gin"
 	"kode/internal/service"
+	"kode/internal/transport/rest/middleware"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -25,9 +26,7 @@ var timeNow = time.Now // переменная для подмены в тест
 func GetNextTakingsHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handlers.NextTakingsHandler"
-		log = log.With(
-			slog.String("fun", fun),
-		)
+		log = log.With(slog.String("fun", fun), slog.String("trace-id", middleware.GetTraceID(c.Request.Context())))
 
 		strId := c.Query("user_id")
 		if strId == "" {
@@ -43,7 +42,7 @@ func GetNextTakingsHandler(log *slog.Logger, service service.MedServiceInterface
 			return
 		}
 
-		medicines, err := service.NextTakings(c, id)
+		medicines, err := service.NextTakings(c.Request.Context(), id)
 		if err != nil {
 			log.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

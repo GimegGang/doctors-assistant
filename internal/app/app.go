@@ -12,6 +12,7 @@ import (
 	"kode/internal/transport/rest/getNextTakings"
 	"kode/internal/transport/rest/getSchedule"
 	"kode/internal/transport/rest/getSchedules"
+	"kode/internal/transport/rest/middleware"
 	"log/slog"
 	"net"
 	"net/http"
@@ -34,13 +35,7 @@ func New(log *slog.Logger, config *config.Config, service *medService.MedService
 	}
 
 	router := gin.New()
-	router.Use(gin.Recovery(), gin.Logger())
-	router.Use(func(c *gin.Context) {
-		if id := c.GetHeader("X-Request-ID"); id != "" {
-			c.Header("X-Request-ID", id)
-		}
-		c.Next()
-	})
+	router.Use(middleware.Logger(log), gin.Recovery())
 
 	router.POST("/schedule", addHandler.AddScheduleHandler(log, service))
 	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, service))

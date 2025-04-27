@@ -15,7 +15,7 @@ import (
 
 func main() {
 	cfg := config.MustLoad("config/config.yaml")
-	log := logger.MustLoad(cfg.Env)
+	log := logger.New(cfg.Env)
 	log.Info("config is loaded", slog.Any("config", cfg))
 
 	db, err := sqlite.New(cfg.StoragePath)
@@ -31,7 +31,7 @@ func main() {
 	defer stop()
 
 	go func() {
-		if err := application.Start(); err != nil {
+		if err = application.Start(); err != nil {
 			log.Error("app failed")
 			stop()
 		}
