@@ -46,6 +46,7 @@ func GetSchedulesHandler(log *slog.Logger, service service.MedServiceInterface) 
 			return
 		}
 
+		log.Info("successful", slog.Int64("request", id), getSchedulesResponse{schedules})
 		c.JSON(http.StatusOK, getSchedulesResponse{schedules})
 	}
 }

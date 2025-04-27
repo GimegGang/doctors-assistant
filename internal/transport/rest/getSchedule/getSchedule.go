@@ -48,6 +48,12 @@ func GetScheduleHandler(log *slog.Logger, service service.MedServiceInterface) g
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		log.Info("successful", slog.Any("request", struct {
+			userID     int64 `json:"userID"`
+			scheduleID int64 `json:"scheduleID"`
+		}{userID: userId, scheduleID: id}), slog.Any("response", med))
+
 		c.JSON(http.StatusOK, med)
 	}
 }

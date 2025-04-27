@@ -17,10 +17,6 @@ type medicine struct {
 
 type ByTime []medicine
 
-func (a ByTime) Len() int           { return len(a) }
-func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByTime) Less(i, j int) bool { return a[i].Time < a[j].Time }
-
 var timeNow = time.Now // переменная для подмены в тестах
 
 func GetNextTakingsHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
@@ -57,6 +53,8 @@ func GetNextTakingsHandler(log *slog.Logger, service service.MedServiceInterface
 		for _, m := range medicines {
 			response = append(response, &medicine{Name: m.Name, Time: m.Times})
 		}
+
+		log.Info("successful", slog.Int64("request", id), slog.Any("response", response))
 		c.JSON(http.StatusOK, response)
 	}
 }

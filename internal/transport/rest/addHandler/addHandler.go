@@ -38,6 +38,8 @@ func AddScheduleHandler(log *slog.Logger, service service.MedServiceInterface) g
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}
+
+		log.Info("successful", slog.Any("request", req), slog.Any("response", addScheduleResponse{Id: id}))
 		c.JSON(http.StatusOK, addScheduleResponse{Id: id})
 	}
 }
