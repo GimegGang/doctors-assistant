@@ -50,9 +50,9 @@ func GetScheduleHandler(log *slog.Logger, service service.MedServiceInterface) g
 		}
 
 		log.Info("successful", slog.Any("request", struct {
-			userID     int64 `json:"userID"`
-			scheduleID int64 `json:"scheduleID"`
-		}{userID: userId, scheduleID: id}), slog.Any("response", med))
+			UserID     int64 `json:"userID"`
+			ScheduleID int64 `json:"scheduleID"`
+		}{UserID: userId, ScheduleID: id}), slog.Any("response", med))
 
 		c.JSON(http.StatusOK, med)
 	}
