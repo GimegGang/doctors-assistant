@@ -79,8 +79,11 @@ func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*s
 	if med.UserId != userId {
 		return nil, fmt.Errorf("schedule does not belong to the user")
 	}
-	med.Schedule = reception.GetReceptionIntake(med.TakingDuration)
-	return med, err
+	med.Schedule, err = reception.GetReceptionIntake(med.TakingDuration)
+	if err != nil {
+		return nil, err
+	}
+	return med, nil
 }
 
 func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicineProto.Medicines, error) {
@@ -97,7 +100,11 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 	now := time.Now()
 	period := now.Add(m.period)
 	for _, medId := range med {
-		for _, t := range reception.GetReceptionIntake(medId.TakingDuration) {
+		rec, err := reception.GetReceptionIntake(medId.TakingDuration)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range rec {
 			intakeTime, err := time.Parse("15:04", t)
 			if err != nil {
 				log.Error("Error parsing time", "error", err)
