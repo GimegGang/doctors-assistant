@@ -1,12 +1,13 @@
 package reception
 
 import (
+	"fmt"
 	"time"
 )
 
-func GetReceptionIntake(takingDuration int32) []string {
+func GetReceptionIntake(takingDuration int32) ([]string, error) {
 	if takingDuration <= 0 {
-		return nil
+		return nil, fmt.Errorf("receptions time must be greate 0")
 	}
 
 	start := time.Date(0, 1, 1, 8, 0, 0, 0, time.UTC)
@@ -16,7 +17,7 @@ func GetReceptionIntake(takingDuration int32) []string {
 
 	if takingDuration == 1 {
 		schedule[0] = start.Format("15:04")
-		return schedule
+		return schedule, nil
 	}
 
 	step := 14 * time.Hour / time.Duration(takingDuration-1)
@@ -30,5 +31,5 @@ func GetReceptionIntake(takingDuration int32) []string {
 		schedule[i] = t.Format("15:04")
 	}
 
-	return schedule
+	return schedule, nil
 }
