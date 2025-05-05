@@ -52,3 +52,5 @@ func GetTraceID(ctx context.Context) string {
 	}
 	return ""
 }
+
+//TODO сделать логирование для gRPC
