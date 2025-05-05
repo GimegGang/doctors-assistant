@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"kode/internal/reception"
+	"kode/internal/component/reception"
 	"kode/internal/storage"
 	"net/http"
 	"slices"
@@ -179,5 +179,30 @@ func TestRest(t *testing.T) {
 		if result.SchedulesID[0] != createdID {
 			t.Errorf("Expected schedule id %d, got %d", createdID, result.SchedulesID[0])
 		}
+	})
+
+	t.Run("GET /next_takings", func(t *testing.T) {
+		req, err := http.NewRequest(
+			"GET",
+			endpoint+"/next_takings?user_id="+fmt.Sprint(requestPostData.UserId),
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("Failed to decode response: %v", err)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET request failed: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body := new(bytes.Buffer)
+			body.ReadFrom(resp.Body)
+			t.Fatalf("Expected status 200, got %d. Response: %s", resp.StatusCode, body.String())
+		}
+
+		//TODO дописать проверку хендлера
 	})
 }

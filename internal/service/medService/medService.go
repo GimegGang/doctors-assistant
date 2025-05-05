@@ -3,7 +3,7 @@ package medService
 import (
 	"context"
 	"fmt"
-	"kode/internal/reception"
+	"kode/internal/component/reception"
 	"kode/internal/storage"
 	"kode/internal/transport/rest/middleware"
 	medicineProto "kode/proto/gen"
@@ -95,7 +95,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 		log.Error("Error getting medicines", "error", err)
 		return nil, err
 	}
-
+	//TODO подумать над переводом логики ниже в отдельный компонен для упрощения чтения
 	var res []*medicineProto.Medicines
 	now := time.Now()
 	period := now.Add(m.period)

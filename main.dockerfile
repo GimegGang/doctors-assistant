@@ -1,6 +1,5 @@
 FROM golang:1.24.2-alpine AS builder
 
-# Устанавливаем зависимости компилятора в отдельном слое
 RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /app
@@ -16,9 +15,10 @@ FROM alpine
 WORKDIR /app
 
 COPY --from=builder /kode-app .
-COPY config/config.yaml ./config/
+COPY config/testconfig.yaml ./config/
 
-RUN mkdir "storage"
+RUN mv ./config/testconfig.yaml ./config/config.yaml && \
+    mkdir "storage"
 
 EXPOSE 8080
 CMD ["./kode-app"]
