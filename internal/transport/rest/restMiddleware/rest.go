@@ -1,4 +1,4 @@
-package middleware
+package restMiddleware
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 type traceIDKey struct{}
 
-func Logger(log *slog.Logger) gin.HandlerFunc {
+func RestLogger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path

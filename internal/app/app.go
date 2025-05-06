@@ -7,12 +7,13 @@ import (
 	"google.golang.org/grpc"
 	"kode/internal/config"
 	"kode/internal/service/medService"
+	"kode/internal/transport/grpc/gPRCMiddleware"
 	"kode/internal/transport/grpc/grpcServer"
 	"kode/internal/transport/rest/addHandler"
 	"kode/internal/transport/rest/getNextTakings"
 	"kode/internal/transport/rest/getSchedule"
 	"kode/internal/transport/rest/getSchedules"
-	"kode/internal/transport/rest/middleware"
+	"kode/internal/transport/rest/restMiddleware"
 	"log/slog"
 	"net"
 	"net/http"
@@ -27,7 +28,7 @@ type App struct {
 }
 
 func New(log *slog.Logger, config *config.Config, service *medService.MedService) *App {
-	gRPCServer := grpc.NewServer()
+	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(gPRCMiddleware.GRPCLogger(log)))
 	grpcServer.Register(gRPCServer, service)
 
 	if config.Env == "prod" {
@@ -35,7 +36,7 @@ func New(log *slog.Logger, config *config.Config, service *medService.MedService
 	}
 
 	router := gin.New()
-	router.Use(middleware.Logger(log), gin.Recovery())
+	router.Use(restMiddleware.RestLogger(log), gin.Recovery())
 
 	router.POST("/schedule", addHandler.AddScheduleHandler(log, service))
 	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, service))

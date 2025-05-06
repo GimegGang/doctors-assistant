@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"kode/internal/component/reception"
 	"kode/internal/storage"
-	"kode/internal/transport/rest/middleware"
+	"kode/internal/transport/rest/restMiddleware"
 	medicineProto "kode/proto/gen"
 	"log/slog"
 	"time"
@@ -128,7 +128,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 func (m *MedService) serviceLogger(ctx context.Context, fun string) *slog.Logger {
 	log := m.log.With(slog.String("fun", fun))
 
-	if traceID := middleware.GetTraceID(ctx); traceID != "" {
+	if traceID := restMiddleware.GetTraceID(ctx); traceID != "" {
 		log = log.With(slog.String("trace-id", traceID))
 	}
 

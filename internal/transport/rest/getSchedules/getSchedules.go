@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"kode/internal/service"
 	"kode/internal/storage"
-	"kode/internal/transport/rest/middleware"
+	"kode/internal/transport/rest/restMiddleware"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,7 +18,7 @@ type getSchedulesResponse struct {
 func GetSchedulesHandler(log *slog.Logger, service service.MedServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const fun = "handler.GetSchedulesHandler"
-		log = log.With(slog.String("fun", fun), slog.String("trace-id", middleware.GetTraceID(c.Request.Context())))
+		log = log.With(slog.String("fun", fun), slog.String("trace-id", restMiddleware.GetTraceID(c.Request.Context())))
 
 		userId := c.Query("user_id")
 		if userId == "" {
