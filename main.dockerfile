@@ -21,4 +21,6 @@ RUN mv ./config/testconfig.yaml ./config/config.yaml && \
     mkdir "storage"
 
 EXPOSE 8080
+EXPOSE 1234
+
 CMD ["./kode-app"]

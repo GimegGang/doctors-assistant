@@ -117,7 +117,6 @@ func TestRest(t *testing.T) {
 			t.Fatalf("Failed to decode response: %v", err)
 		}
 
-		// Проверка полей
 		if result.Name != requestPostData.Name {
 			t.Errorf("Expected Name %q, got %q", requestPostData.Name, result.Name)
 		}

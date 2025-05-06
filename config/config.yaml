@@ -4,4 +4,4 @@ grpc_address: 1234
 storage_path: "storage/storage.db"
 timeout: 5s
 idle_timeout: 1m
-time_period: 24h
+time_period: 1h
