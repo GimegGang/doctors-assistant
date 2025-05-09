@@ -84,6 +84,38 @@ func (h *RequestHandler) PostSchedule(c *gin.Context) {
 		return
 	}
 
+	if medicine.Name == "" {
+		log.Error("medicine name is required")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "medicine name is required",
+		})
+		return
+	}
+
+	if medicine.UserId <= 0 {
+		log.Error("invalid user ID")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "user ID must be positive",
+		})
+		return
+	}
+
+	if medicine.TakingDuration <= 0 {
+		log.Error("invalid taking duration")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "taking duration must be positive",
+		})
+		return
+	}
+
+	if medicine.TreatmentDuration <= 0 {
+		log.Error("invalid treatment duration")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "treatment duration must be positive",
+		})
+		return
+	}
+
 	id, err := h.service.AddSchedule(c, medicine.Name, medicine.UserId, medicine.TakingDuration, medicine.TreatmentDuration)
 	if err != nil {
 		log.Error("error adding schedule", "err", err)

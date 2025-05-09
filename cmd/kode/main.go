@@ -6,7 +6,7 @@ import (
 	"kode/internal/config"
 	"kode/internal/logger"
 	"kode/internal/service/medService"
-	"kode/internal/storage/postgres"
+	"kode/internal/storage/sqlite"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -18,8 +18,8 @@ func main() {
 	log := logger.New(cfg.Env)
 	log.Info("config is loaded", slog.Any("config", cfg))
 
-	//db, err := sqlite.New(cfg.StoragePath) //sqlite
-	db, err := postgres.New("host=localhost port=5432 user=gimeg dbname=postgres sslmode=disable") //postgres
+	db, err := sqlite.New(cfg.StoragePath) //sqlite
+	//db, err := postgres.New("host=localhost port=5432 user=gimeg dbname=postgres sslmode=disable") //postgres
 
 	if err != nil {
 		log.Error("Error opening database", "error", err)

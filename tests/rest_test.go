@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"kode/internal/component/reception"
@@ -203,5 +205,52 @@ func TestRest(t *testing.T) {
 		}
 
 		//TODO дописать проверку хендлера
+	})
+
+	t.Run("POST /schedule with empty name", func(t *testing.T) {
+		invalidData := storage.Medicine{
+			Name:              "",
+			TakingDuration:    5,
+			TreatmentDuration: 5,
+			UserId:            1,
+		}
+		jsonBody, _ := json.Marshal(invalidData)
+		resp, err := http.Post(endpoint+"/schedule", "application/json", bytes.NewBuffer(jsonBody))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("GET /schedule with non-existent ID", func(t *testing.T) {
+		resp, err := http.Get(endpoint + "/schedule?user_id=1&schedule_id=999999")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	})
+
+	t.Run("GET /schedules with invalid user_id", func(t *testing.T) {
+		resp, err := http.Get(endpoint + "/schedules?user_id=-1")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	})
+
+	t.Run("POST /schedule with malformed JSON", func(t *testing.T) {
+		resp, err := http.Post(endpoint+"/schedule", "application/json", bytes.NewBufferString("{invalid json}"))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("GET /next_takings with non-existent user", func(t *testing.T) {
+		resp, err := http.Get(endpoint + "/next_takings?user_id=999999")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
 }
