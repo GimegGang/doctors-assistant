@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func setup(t *testing.T) (*Storage, func()) {
+func setup(t *testing.T) (*StorageSqlite, func()) {
 	tmpFile, err := os.CreateTemp("", "testdb-*.db")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)

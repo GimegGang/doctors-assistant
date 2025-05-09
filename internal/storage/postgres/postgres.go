@@ -1,49 +1,47 @@
-package sqlite
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"kode/internal/storage"
 	"time"
 )
 
-type StorageSqlite struct {
+type StoragePostgres struct {
 	*sql.DB
 }
 
-func New(storagePath string) (*StorageSqlite, error) {
-	const fun = "internal/storage/sqlite.New"
-	db, err := sql.Open("sqlite3", storagePath)
+func New(url string) (*StoragePostgres, error) {
+	const fun = "internal/storage/postgres.New"
+
+	db, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS medicine (
-    	id INTEGER PRIMARY KEY,
-    	name TEXT NOT NULL,
-    	taking_duration INTEGER NOT NULL,
-    	treatment_duration INTEGER NOT NULL,
-    	user_id INTEGER NOT NULL,
-    	date DATE NOT NULL
-	);`)
+	//TODO добавить миграции
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS medicine (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			taking_duration BIGINT NOT NULL,
+			treatment_duration BIGINT NOT NULL,
+			user_id BIGINT NOT NULL,
+			date TIMESTAMP NOT NULL
+		);
+	`)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to create medicine table: %w", fun, err)
 	}
 
-	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS user_index ON medicine (user_id);`)
-	if err != nil {
-		return nil, fmt.Errorf("%s: failed to createй index on medicine: %w", fun, err)
-	}
-
-	return &StorageSqlite{db}, nil
+	return &StoragePostgres{db}, nil
 }
 
-func (s *StorageSqlite) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
-	const fun = "internal/storage/mysql.GetSchedules"
-	rows, err := s.QueryContext(ctx, "SELECT id FROM medicine WHERE user_id = ?", medId)
+func (s *StoragePostgres) GetMedicines(ctx context.Context, medId int64) ([]int64, error) {
+	const fun = "internal/storage/postgres.GetMedicines"
+	rows, err := s.QueryContext(ctx, "SELECT id FROM medicine WHERE user_id = $1", medId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
@@ -66,20 +64,16 @@ func (s *StorageSqlite) GetMedicines(ctx context.Context, medId int64) ([]int64,
 	return res, nil
 }
 
-func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
-	const fun = "internal/storage/mysql.AddSchedule"
-
-	stmt, err := s.Prepare(`INSERT INTO medicine (name, taking_duration, treatment_duration, user_id, date) values (?, ?, ?, ?, ?)`)
+func (s *StoragePostgres) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+	const fun = "internal/storage/postgres.AddMedicine"
+	stmt, err := s.Prepare(`INSERT INTO medicine (name, taking_duration, treatment_duration, user_id, date) VALUES ($1, $2, $3, $4, $5) RETURNING id`)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
 	defer stmt.Close()
 
-	res, err := stmt.ExecContext(ctx, schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now())
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", fun, err)
-	}
-	lastID, err := res.LastInsertId()
+	var lastID int64
+	err = stmt.QueryRowContext(ctx, schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now()).Scan(&lastID)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
@@ -87,17 +81,15 @@ func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule storage.Medici
 	return lastID, nil
 }
 
-func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
-	const fun = "internal/storage/mysql.GetSchedule"
-
-	stmt, err := s.Prepare("SELECT * FROM medicine WHERE id = ?")
+func (s *StoragePostgres) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+	const fun = "internal/storage/postgres.GetMedicine"
+	stmt, err := s.Prepare("SELECT * FROM medicine WHERE id = $1")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
 	defer stmt.Close()
 
 	var res storage.Medicine
-
 	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
 			return nil, storage.ErrNotFound
@@ -112,21 +104,18 @@ func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*storage.Med
 	return &res, nil
 }
 
-func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
-	const fun = "internal/storage/sqlite.GetMedicinesByUserID"
-
+func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
+	const fun = "internal/storage/postgres.GetMedicinesByUserID"
 	rows, err := s.QueryContext(ctx, `
         SELECT id, name, taking_duration, treatment_duration, user_id, date 
         FROM medicine 
-        WHERE user_id = ?
-    `, userID)
+        WHERE user_id = $1`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
 	defer rows.Close()
 
 	var medicines []*storage.Medicine
-
 	for rows.Next() {
 		var med storage.Medicine
 		if err = rows.Scan(&med.Id, &med.Name, &med.TakingDuration, &med.TreatmentDuration, &med.UserId, &med.Date); err != nil {

@@ -9,10 +9,8 @@ import (
 	"kode/internal/service/medService"
 	"kode/internal/transport/grpc/gPRCMiddleware"
 	"kode/internal/transport/grpc/grpcServer"
-	"kode/internal/transport/rest/addHandler"
-	"kode/internal/transport/rest/getNextTakings"
-	"kode/internal/transport/rest/getSchedule"
-	"kode/internal/transport/rest/getSchedules"
+	"kode/internal/transport/rest/api"
+	"kode/internal/transport/rest/handlers"
 	"kode/internal/transport/rest/restMiddleware"
 	"log/slog"
 	"net"
@@ -36,12 +34,12 @@ func New(log *slog.Logger, config *config.Config, service *medService.MedService
 	}
 
 	router := gin.New()
-	router.Use(restMiddleware.RestLogger(log), gin.Recovery())
 
-	router.POST("/schedule", addHandler.AddScheduleHandler(log, service))
-	router.GET("/schedules", getSchedules.GetSchedulesHandler(log, service))
-	router.GET("/schedule", getSchedule.GetScheduleHandler(log, service))
-	router.GET("/next_takings", getNextTakings.GetNextTakingsHandler(log, service))
+	router.Use(restMiddleware.RestLogger(log))
+	router.Use(gin.Recovery())
+
+	handler := handlers.New(log, service)
+	api.RegisterHandlers(router, handler)
 
 	restServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.RestAddress),
