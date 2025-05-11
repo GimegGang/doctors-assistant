@@ -2,6 +2,7 @@ package medService
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"kode/internal/component/reception"
 	"kode/internal/storage"
@@ -32,9 +33,16 @@ func New(log *slog.Logger, storage medStorage, period time.Duration) *MedService
 	}
 }
 
+var timeNow = time.Now
+
 func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64, takingDuration, treatmentDuration int32) (int64, error) {
 	const fun = "medService.AddSchedule"
 	log := m.serviceLogger(ctx, fun)
+
+	if name == "" || userId <= 0 || takingDuration <= 0 || treatmentDuration <= 0 {
+		log.Error("invalid input data")
+		return 0, errors.New("invalid input data")
+	}
 
 	med := storage.Medicine{Name: name,
 		UserId:            userId,
@@ -54,6 +62,11 @@ func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64,
 func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, error) {
 	const fun = "medService.Schedules"
 	log := m.serviceLogger(ctx, fun)
+
+	if userId <= 0 {
+		log.Error("ID must be greater 0")
+		return nil, errors.New("ID must be greater 0")
+	}
 
 	ids, err := m.storage.GetMedicines(ctx, userId)
 	if err != nil {
@@ -97,7 +110,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 	}
 	//TODO подумать над переводом логики ниже в отдельный компонен для упрощения чтения
 	var res []*medicineProto.Medicines
-	now := time.Now()
+	now := timeNow()
 	period := now.Add(m.period)
 	for _, medId := range med {
 		rec, err := reception.GetReceptionIntake(medId.TakingDuration)
