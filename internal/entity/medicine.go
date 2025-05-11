@@ -1,7 +1,6 @@
-package storage
+package entity
 
 import (
-	"errors"
 	"time"
 )
 
@@ -14,11 +13,3 @@ type Medicine struct {
 	Schedule          []string  `json:"schedule"`
 	Date              time.Time `json:"date"`
 }
-
-// Errors
-var (
-	ErrInvalidRequest   = errors.New("invalid request")
-	ErrNotFound         = errors.New("not found")
-	ErrInternal         = errors.New("internal server error")
-	ErrPermissionDenied = errors.New("permission denied")
-)

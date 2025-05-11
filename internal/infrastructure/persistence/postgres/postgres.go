@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
-	"kode/internal/storage"
+	"kode/internal/entity"
 	"time"
 )
 
@@ -58,13 +58,13 @@ func (s *StoragePostgres) GetMedicines(ctx context.Context, medId int64) ([]int6
 	}
 
 	if len(res) == 0 {
-		return res, storage.ErrNotFound
+		return res, entity.ErrNotFound
 	}
 
 	return res, nil
 }
 
-func (s *StoragePostgres) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+func (s *StoragePostgres) AddMedicine(ctx context.Context, schedule entity.Medicine) (int64, error) {
 	const fun = "internal/storage/postgres.AddMedicine"
 	stmt, err := s.Prepare(`INSERT INTO medicine (name, taking_duration, treatment_duration, user_id, date) VALUES ($1, $2, $3, $4, $5) RETURNING id`)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *StoragePostgres) AddMedicine(ctx context.Context, schedule storage.Medi
 	return lastID, nil
 }
 
-func (s *StoragePostgres) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+func (s *StoragePostgres) GetMedicine(ctx context.Context, id int64) (*entity.Medicine, error) {
 	const fun = "internal/storage/postgres.GetMedicine"
 	stmt, err := s.Prepare("SELECT * FROM medicine WHERE id = $1")
 	if err != nil {
@@ -89,22 +89,22 @@ func (s *StoragePostgres) GetMedicine(ctx context.Context, id int64) (*storage.M
 	}
 	defer stmt.Close()
 
-	var res storage.Medicine
+	var res entity.Medicine
 	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
-			return nil, storage.ErrNotFound
+			return nil, entity.ErrNotFound
 		}
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
 
 	if time.Now().After(res.Date.Add((time.Hour * 24) * time.Duration(res.TreatmentDuration))) {
-		return nil, storage.ErrNotFound
+		return nil, entity.ErrNotFound
 	}
 
 	return &res, nil
 }
 
-func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
+func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*entity.Medicine, error) {
 	const fun = "internal/storage/postgres.GetMedicinesByUserID"
 	rows, err := s.QueryContext(ctx, `
         SELECT id, name, taking_duration, treatment_duration, user_id, date 
@@ -115,9 +115,9 @@ func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64
 	}
 	defer rows.Close()
 
-	var medicines []*storage.Medicine
+	var medicines []*entity.Medicine
 	for rows.Next() {
-		var med storage.Medicine
+		var med entity.Medicine
 		if err = rows.Scan(&med.Id, &med.Name, &med.TakingDuration, &med.TreatmentDuration, &med.UserId, &med.Date); err != nil {
 			return nil, fmt.Errorf("%s: %w", fun, err)
 		}
@@ -127,7 +127,7 @@ func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64
 	}
 
 	if len(medicines) == 0 {
-		return nil, storage.ErrNotFound
+		return nil, entity.ErrNotFound
 	}
 
 	return medicines, nil

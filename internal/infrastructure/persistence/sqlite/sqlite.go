@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"kode/internal/storage"
+	"kode/internal/entity"
 	"time"
 )
 
@@ -60,13 +60,13 @@ func (s *StorageSqlite) GetMedicines(ctx context.Context, medId int64) ([]int64,
 	}
 
 	if len(res) == 0 {
-		return res, storage.ErrNotFound
+		return res, entity.ErrNotFound
 	}
 
 	return res, nil
 }
 
-func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule entity.Medicine) (int64, error) {
 	const fun = "internal/storage/mysql.AddSchedule"
 
 	stmt, err := s.Prepare(`INSERT INTO medicine (name, taking_duration, treatment_duration, user_id, date) values (?, ?, ?, ?, ?)`)
@@ -87,7 +87,7 @@ func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule storage.Medici
 	return lastID, nil
 }
 
-func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*entity.Medicine, error) {
 	const fun = "internal/storage/mysql.GetSchedule"
 
 	stmt, err := s.Prepare("SELECT * FROM medicine WHERE id = ?")
@@ -96,23 +96,23 @@ func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*storage.Med
 	}
 	defer stmt.Close()
 
-	var res storage.Medicine
+	var res entity.Medicine
 
 	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
 		if errors.Is(sql.ErrNoRows, err) {
-			return nil, storage.ErrNotFound
+			return nil, entity.ErrNotFound
 		}
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
 
 	if time.Now().After(res.Date.Add((time.Hour * 24) * time.Duration(res.TreatmentDuration))) {
-		return nil, storage.ErrNotFound
+		return nil, entity.ErrNotFound
 	}
 
 	return &res, nil
 }
 
-func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
+func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*entity.Medicine, error) {
 	const fun = "internal/storage/sqlite.GetMedicinesByUserID"
 
 	rows, err := s.QueryContext(ctx, `
@@ -125,10 +125,10 @@ func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) 
 	}
 	defer rows.Close()
 
-	var medicines []*storage.Medicine
+	var medicines []*entity.Medicine
 
 	for rows.Next() {
-		var med storage.Medicine
+		var med entity.Medicine
 		if err = rows.Scan(&med.Id, &med.Name, &med.TakingDuration, &med.TreatmentDuration, &med.UserId, &med.Date); err != nil {
 			return nil, fmt.Errorf("%s: %w", fun, err)
 		}
@@ -138,7 +138,7 @@ func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) 
 	}
 
 	if len(medicines) == 0 {
-		return nil, storage.ErrNotFound
+		return nil, entity.ErrNotFound
 	}
 
 	return medicines, nil

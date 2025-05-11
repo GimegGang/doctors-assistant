@@ -5,18 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"kode/internal/component/reception"
-	"kode/internal/storage"
+	"kode/internal/entity"
+	medicineProto "kode/internal/transport/grpc/generated"
 	"kode/internal/transport/rest/restMiddleware"
-	medicineProto "kode/proto/gen"
 	"log/slog"
 	"time"
 )
 
 type medStorage interface {
-	AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error)
+	AddMedicine(ctx context.Context, schedule entity.Medicine) (int64, error)
 	GetMedicines(ctx context.Context, medId int64) ([]int64, error)
-	GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error)
-	GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error)
+	GetMedicine(ctx context.Context, id int64) (*entity.Medicine, error)
+	GetMedicinesByUserID(ctx context.Context, userID int64) ([]*entity.Medicine, error)
 }
 
 type MedService struct {
@@ -44,7 +44,7 @@ func (m *MedService) AddSchedule(ctx context.Context, name string, userId int64,
 		return 0, errors.New("invalid input data")
 	}
 
-	med := storage.Medicine{Name: name,
+	med := entity.Medicine{Name: name,
 		UserId:            userId,
 		TakingDuration:    takingDuration,
 		TreatmentDuration: treatmentDuration,
@@ -77,7 +77,7 @@ func (m *MedService) Schedules(ctx context.Context, userId int64) ([]int64, erro
 	return ids, err
 }
 
-func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*storage.Medicine, error) {
+func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*entity.Medicine, error) {
 	const fun = "medService.Schedule"
 	log := m.serviceLogger(ctx, fun)
 
@@ -87,7 +87,7 @@ func (m *MedService) Schedule(ctx context.Context, userId, scheduleId int64) (*s
 		return nil, err
 	}
 	if med == nil {
-		return nil, storage.ErrNotFound
+		return nil, entity.ErrNotFound
 	}
 	if med.UserId != userId {
 		return nil, fmt.Errorf("schedule does not belong to the user")

@@ -10,7 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"kode/internal/component/reception"
-	"kode/internal/storage"
+	"kode/internal/entity"
 	"net/http"
 	"slices"
 	"testing"
@@ -52,7 +52,7 @@ func TestRest(t *testing.T) {
 	endpoint := "http://localhost:" + port.Port()
 	time.Sleep(2 * time.Second)
 
-	requestPostData := storage.Medicine{
+	requestPostData := entity.Medicine{
 		Name:              "test",
 		TakingDuration:    5,
 		TreatmentDuration: 5,
@@ -114,7 +114,7 @@ func TestRest(t *testing.T) {
 			t.Fatalf("Expected status 200, got %d. Response: %s", resp.StatusCode, body.String())
 		}
 
-		var result storage.Medicine
+		var result entity.Medicine
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			t.Fatalf("Failed to decode response: %v", err)
 		}
@@ -208,7 +208,7 @@ func TestRest(t *testing.T) {
 	})
 
 	t.Run("POST /schedule with empty name", func(t *testing.T) {
-		invalidData := storage.Medicine{
+		invalidData := entity.Medicine{
 			Name:              "",
 			TakingDuration:    5,
 			TreatmentDuration: 5,

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"kode/internal/component/reception"
-	medicineProto "kode/proto/gen"
+	"kode/internal/transport/grpc/generated"
 	"slices"
 	"testing"
 	"time"
@@ -54,9 +54,9 @@ func TestGRPC(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := medicineProto.NewMedicineServiceClient(conn)
+	client := generated.NewMedicineServiceClient(conn)
 
-	requestPostData := medicineProto.AddScheduleRequest{
+	requestPostData := generated.AddScheduleRequest{
 		Name:              "test",
 		TakingDuration:    5,
 		TreatmentDuration: 5,
@@ -81,7 +81,7 @@ func TestGRPC(t *testing.T) {
 			t.Fatal("No schedule ID available")
 		}
 
-		response, err := client.Schedule(ctx, &medicineProto.ScheduleRequest{
+		response, err := client.Schedule(ctx, &generated.ScheduleRequest{
 			ScheduleId: createdID,
 			UserId:     requestPostData.UserId,
 		})
@@ -116,7 +116,7 @@ func TestGRPC(t *testing.T) {
 			t.Fatal("No schedule ID available")
 		}
 
-		response, err := client.Schedules(ctx, &medicineProto.SchedulesRequest{UserId: requestPostData.UserId})
+		response, err := client.Schedules(ctx, &generated.SchedulesRequest{UserId: requestPostData.UserId})
 		if err != nil {
 			t.Fatalf("Error request: %v", err)
 		}
@@ -130,7 +130,7 @@ func TestGRPC(t *testing.T) {
 	})
 
 	t.Run("gRPC NextTakings", func(t *testing.T) {
-		_, err := client.NextTakings(ctx, &medicineProto.NextTakingsRequest{UserId: requestPostData.UserId})
+		_, err := client.NextTakings(ctx, &generated.NextTakingsRequest{UserId: requestPostData.UserId})
 		if err != nil {
 			t.Fatalf("Error request: %v", err)
 		}

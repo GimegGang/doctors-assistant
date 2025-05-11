@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
+	"kode/docs/openAPI"
 	"kode/internal/config"
 	"kode/internal/service/medService"
-	"kode/internal/transport/grpc/gPRCMiddleware"
 	"kode/internal/transport/grpc/grpcServer"
-	"kode/internal/transport/rest/api"
+	gRPCMiddleware "kode/internal/transport/grpc/middleware"
 	"kode/internal/transport/rest/handlers"
 	"kode/internal/transport/rest/restMiddleware"
 	"log/slog"
@@ -26,7 +26,7 @@ type App struct {
 }
 
 func New(log *slog.Logger, config *config.Config, service *medService.MedService) *App {
-	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(gPRCMiddleware.GRPCLogger(log)))
+	gRPCServer := grpc.NewServer(grpc.UnaryInterceptor(gRPCMiddleware.GRPCLogger(log)))
 	grpcServer.Register(gRPCServer, service)
 
 	if config.Env == "prod" {
@@ -39,7 +39,7 @@ func New(log *slog.Logger, config *config.Config, service *medService.MedService
 	router.Use(gin.Recovery())
 
 	handler := handlers.New(log, service)
-	api.RegisterHandlers(router, handler)
+	openAPI.RegisterHandlers(router, handler)
 
 	restServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.RestAddress),

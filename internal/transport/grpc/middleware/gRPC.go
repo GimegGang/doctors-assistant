@@ -1,4 +1,4 @@
-package gPRCMiddleware
+package gRPCMiddleware
 
 import (
 	"context"

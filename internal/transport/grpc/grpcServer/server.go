@@ -5,20 +5,20 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"kode/internal/service"
-	medicineProto "kode/proto/gen"
+	"kode/internal/entity"
+	"kode/internal/transport/grpc/generated"
 )
 
 type serverAPI struct {
-	medService service.MedServiceInterface
-	medicineProto.UnimplementedMedicineServiceServer
+	medService entity.MedServiceInterface
+	generated.UnimplementedMedicineServiceServer
 }
 
-func Register(s *grpc.Server, medService service.MedServiceInterface) {
-	medicineProto.RegisterMedicineServiceServer(s, &serverAPI{medService: medService})
+func Register(s *grpc.Server, medService entity.MedServiceInterface) {
+	generated.RegisterMedicineServiceServer(s, &serverAPI{medService: medService})
 }
 
-func (s *serverAPI) AddSchedule(ctx context.Context, req *medicineProto.AddScheduleRequest) (*medicineProto.AddScheduleResponse, error) {
+func (s *serverAPI) AddSchedule(ctx context.Context, req *generated.AddScheduleRequest) (*generated.AddScheduleResponse, error) {
 
 	if req.GetName() == "" || req.GetUserId() < 0 || req.GetTakingDuration() < 0 || req.GetTreatmentDuration() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
@@ -27,10 +27,10 @@ func (s *serverAPI) AddSchedule(ctx context.Context, req *medicineProto.AddSched
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &medicineProto.AddScheduleResponse{Id: id}, nil
+	return &generated.AddScheduleResponse{Id: id}, nil
 }
 
-func (s *serverAPI) Schedules(ctx context.Context, req *medicineProto.SchedulesRequest) (*medicineProto.SchedulesResponse, error) {
+func (s *serverAPI) Schedules(ctx context.Context, req *generated.SchedulesRequest) (*generated.SchedulesResponse, error) {
 	if req.GetUserId() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}
@@ -38,10 +38,10 @@ func (s *serverAPI) Schedules(ctx context.Context, req *medicineProto.SchedulesR
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &medicineProto.SchedulesResponse{SchedulesId: ids}, nil
+	return &generated.SchedulesResponse{SchedulesId: ids}, nil
 }
 
-func (s *serverAPI) Schedule(ctx context.Context, req *medicineProto.ScheduleRequest) (*medicineProto.ScheduleResponse, error) {
+func (s *serverAPI) Schedule(ctx context.Context, req *generated.ScheduleRequest) (*generated.ScheduleResponse, error) {
 	if req.GetUserId() < 0 || req.GetScheduleId() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}
@@ -50,7 +50,7 @@ func (s *serverAPI) Schedule(ctx context.Context, req *medicineProto.ScheduleReq
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &medicineProto.ScheduleResponse{
+	return &generated.ScheduleResponse{
 		Id:                med.Id,
 		Name:              med.Name,
 		TakingDuration:    med.TakingDuration,
@@ -61,7 +61,7 @@ func (s *serverAPI) Schedule(ctx context.Context, req *medicineProto.ScheduleReq
 	}, nil
 }
 
-func (s *serverAPI) NextTakings(ctx context.Context, req *medicineProto.NextTakingsRequest) (*medicineProto.NextTakingsResponse, error) {
+func (s *serverAPI) NextTakings(ctx context.Context, req *generated.NextTakingsRequest) (*generated.NextTakingsResponse, error) {
 	if req.GetUserId() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}
@@ -69,5 +69,5 @@ func (s *serverAPI) NextTakings(ctx context.Context, req *medicineProto.NextTaki
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &medicineProto.NextTakingsResponse{Medicines: meds}, nil
+	return &generated.NextTakingsResponse{Medicines: meds}, nil
 }

@@ -3,8 +3,8 @@ package medService
 import (
 	"context"
 	"errors"
-	"kode/internal/logger"
-	"kode/internal/storage"
+	"kode/internal/entity"
+	"kode/pkg/logger"
 	"slices"
 	"testing"
 	"time"
@@ -22,21 +22,21 @@ func (m *mockStorage) GetMedicines(ctx context.Context, medId int64) ([]int64, e
 	return []int64{1, 2, 3}, nil
 }
 
-func (m *mockStorage) AddMedicine(ctx context.Context, schedule storage.Medicine) (int64, error) {
+func (m *mockStorage) AddMedicine(ctx context.Context, schedule entity.Medicine) (int64, error) {
 	if m.shouldError {
 		return 0, errors.New("error")
 	}
 	return 5, nil
 }
 
-func (m *mockStorage) GetMedicine(ctx context.Context, id int64) (*storage.Medicine, error) {
+func (m *mockStorage) GetMedicine(ctx context.Context, id int64) (*entity.Medicine, error) {
 	if m.shouldError {
 		return nil, errors.New("error")
 	}
 	if m.shouldEmpty {
 		return nil, nil
 	}
-	return &storage.Medicine{
+	return &entity.Medicine{
 		Id:                id,
 		Name:              "test",
 		UserId:            1,
@@ -46,14 +46,14 @@ func (m *mockStorage) GetMedicine(ctx context.Context, id int64) (*storage.Medic
 	}, nil
 }
 
-func (m *mockStorage) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*storage.Medicine, error) {
+func (m *mockStorage) GetMedicinesByUserID(ctx context.Context, userID int64) ([]*entity.Medicine, error) {
 	if m.shouldError {
 		return nil, errors.New("error")
 	}
 	if m.shouldEmpty {
-		return []*storage.Medicine{}, nil
+		return []*entity.Medicine{}, nil
 	}
-	return []*storage.Medicine{
+	return []*entity.Medicine{
 		{
 			Id:                1,
 			Name:              "medicine1",

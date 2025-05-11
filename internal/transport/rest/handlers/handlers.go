@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"kode/internal/service"
-	"kode/internal/transport/rest/api"
+	"kode/docs/openAPI"
+	"kode/internal/entity"
 	"kode/internal/transport/rest/restMiddleware"
 	"log/slog"
 	"net/http"
@@ -11,17 +11,17 @@ import (
 
 type RequestHandler struct {
 	log     *slog.Logger
-	service service.MedServiceInterface
+	service entity.MedServiceInterface
 }
 
-func New(log *slog.Logger, service service.MedServiceInterface) *RequestHandler {
+func New(log *slog.Logger, service entity.MedServiceInterface) *RequestHandler {
 	return &RequestHandler{
 		log:     log,
 		service: service,
 	}
 }
 
-func (h *RequestHandler) GetNextTakings(c *gin.Context, params api.GetNextTakingsParams) {
+func (h *RequestHandler) GetNextTakings(c *gin.Context, params openAPI.GetNextTakingsParams) {
 	const fun = "handlers.GetNextTakings"
 	log := h.log.With(slog.String("fun", fun), slog.String("trace-id", restMiddleware.GetTraceID(c.Request.Context())))
 
@@ -37,9 +37,9 @@ func (h *RequestHandler) GetNextTakings(c *gin.Context, params api.GetNextTaking
 		return
 	}
 
-	var response []*api.NextTaking
+	var response []*openAPI.NextTaking
 	for _, m := range medicines {
-		response = append(response, &api.NextTaking{
+		response = append(response, &openAPI.NextTaking{
 			Name: &m.Name,
 			Time: &m.Times,
 		})
@@ -48,7 +48,7 @@ func (h *RequestHandler) GetNextTakings(c *gin.Context, params api.GetNextTaking
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *RequestHandler) GetSchedule(c *gin.Context, params api.GetScheduleParams) {
+func (h *RequestHandler) GetSchedule(c *gin.Context, params openAPI.GetScheduleParams) {
 	const fun = "handlers.GetSchedule"
 	log := h.log.With(slog.String("fun", fun), slog.String("trace-id", restMiddleware.GetTraceID(c.Request.Context())))
 
@@ -59,7 +59,7 @@ func (h *RequestHandler) GetSchedule(c *gin.Context, params api.GetScheduleParam
 		return
 	}
 
-	response := api.Medicine{
+	response := openAPI.Medicine{
 		Id:                &medicine.Id,
 		Name:              medicine.Name,
 		TakingDuration:    medicine.TakingDuration,
@@ -77,7 +77,7 @@ func (h *RequestHandler) PostSchedule(c *gin.Context) {
 	const fun = "handlers.PostSchedule"
 	log := h.log.With(slog.String("fun", fun), slog.String("trace-id", restMiddleware.GetTraceID(c.Request.Context())))
 
-	var medicine api.Medicine
+	var medicine openAPI.Medicine
 	if err := c.ShouldBindJSON(&medicine); err != nil {
 		log.Error("error decoding request body", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -123,10 +123,10 @@ func (h *RequestHandler) PostSchedule(c *gin.Context) {
 		return
 	}
 	log.Info("schedule added", slog.Int64("id", id))
-	c.JSON(http.StatusOK, api.AddScheduleResponse{Id: &id})
+	c.JSON(http.StatusOK, openAPI.AddScheduleResponse{Id: &id})
 }
 
-func (h *RequestHandler) GetSchedules(c *gin.Context, params api.GetSchedulesParams) {
+func (h *RequestHandler) GetSchedules(c *gin.Context, params openAPI.GetSchedulesParams) {
 	const fun = "handlers.GetSchedules"
 	log := h.log.With(slog.String("fun", fun), slog.String("trace-id", restMiddleware.GetTraceID(c.Request.Context())))
 
@@ -138,5 +138,5 @@ func (h *RequestHandler) GetSchedules(c *gin.Context, params api.GetSchedulesPar
 	}
 
 	log.Info("successful", slog.Int64("userId", params.UserId))
-	c.JSON(http.StatusOK, api.GetSchedulesResponse{SchedulesId: &medicine})
+	c.JSON(http.StatusOK, openAPI.GetSchedulesResponse{SchedulesId: &medicine})
 }
