@@ -3,6 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 	"kode/docs/openAPI"
@@ -12,10 +17,6 @@ import (
 	gRPCMiddleware "kode/internal/transport/grpc/middleware"
 	"kode/internal/transport/rest/handlers"
 	"kode/internal/transport/rest/restMiddleware"
-	"log/slog"
-	"net"
-	"net/http"
-	"time"
 )
 
 type App struct {

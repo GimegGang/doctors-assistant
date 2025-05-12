@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	_ "github.com/lib/pq"
 	"kode/internal/entity"
-	"time"
 )
 
 type StoragePostgres struct {
@@ -21,7 +22,7 @@ func New(url string) (*StoragePostgres, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	//TODO добавить миграции
+	// TODO добавить миграции
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS medicine (
 			id BIGSERIAL PRIMARY KEY,
@@ -45,7 +46,9 @@ func (s *StoragePostgres) GetMedicines(ctx context.Context, medId int64) ([]int6
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var res []int64
 
@@ -70,7 +73,9 @@ func (s *StoragePostgres) AddMedicine(ctx context.Context, schedule entity.Medic
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	var lastID int64
 	err = stmt.QueryRowContext(ctx, schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now()).Scan(&lastID)
@@ -87,11 +92,13 @@ func (s *StoragePostgres) GetMedicine(ctx context.Context, id int64) (*entity.Me
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	var res entity.Medicine
 	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
-		if errors.Is(sql.ErrNoRows, err) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.ErrNotFound
 		}
 		return nil, fmt.Errorf("%s: %w", fun, err)
@@ -113,7 +120,9 @@ func (s *StoragePostgres) GetMedicinesByUserID(ctx context.Context, userID int64
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var medicines []*entity.Medicine
 	for rows.Next() {

@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 	"kode/internal/entity"
-	"time"
 )
 
 type StorageSqlite struct {
@@ -47,7 +48,9 @@ func (s *StorageSqlite) GetMedicines(ctx context.Context, medId int64) ([]int64,
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var res []int64
 
@@ -73,7 +76,9 @@ func (s *StorageSqlite) AddMedicine(ctx context.Context, schedule entity.Medicin
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	res, err := stmt.ExecContext(ctx, schedule.Name, schedule.TakingDuration, schedule.TreatmentDuration, schedule.UserId, time.Now())
 	if err != nil {
@@ -94,12 +99,14 @@ func (s *StorageSqlite) GetMedicine(ctx context.Context, id int64) (*entity.Medi
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	var res entity.Medicine
 
 	if err = stmt.QueryRowContext(ctx, id).Scan(&res.Id, &res.Name, &res.TakingDuration, &res.TreatmentDuration, &res.UserId, &res.Date); err != nil {
-		if errors.Is(sql.ErrNoRows, err) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.ErrNotFound
 		}
 		return nil, fmt.Errorf("%s: %w", fun, err)
@@ -123,7 +130,9 @@ func (s *StorageSqlite) GetMedicinesByUserID(ctx context.Context, userID int64) 
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fun, err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var medicines []*entity.Medicine
 

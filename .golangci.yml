@@ -1,0 +1,66 @@
+version: "2"
+
+# Форматтеры
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(go-backend-example)
+    skip-generated: true
+
+# Линтеры
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    - cyclop
+    - errcheck
+    - errorlint
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unused
+    - whitespace
+
+# Настройки выполнения
+run:
+  tests: false
+  skip-dirs:
+    - docs
+    - example
+    - proto
+    - go/pkg/mod
+  modules-download-mode: readonly
+
+# Настройки линтеров
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+    disabled-checks:
+      - hugeParam
+  cyclop:
+    max-complexity: 10
+  misspell:
+    locale: US
+
+# Вывод
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true

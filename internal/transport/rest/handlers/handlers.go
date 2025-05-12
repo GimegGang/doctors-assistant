@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"log/slog"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"kode/docs/openAPI"
 	"kode/internal/entity"
 	"kode/internal/transport/rest/restMiddleware"
-	"log/slog"
-	"net/http"
 )
 
 type RequestHandler struct {

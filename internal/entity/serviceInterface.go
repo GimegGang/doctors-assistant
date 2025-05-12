@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+
 	medicineProto "kode/internal/transport/grpc/generated"
 )
 

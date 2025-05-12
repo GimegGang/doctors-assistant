@@ -2,6 +2,7 @@ package grpcServer
 
 import (
 	"context"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,7 +20,6 @@ func Register(s *grpc.Server, medService entity.MedServiceInterface) {
 }
 
 func (s *serverAPI) AddSchedule(ctx context.Context, req *generated.AddScheduleRequest) (*generated.AddScheduleResponse, error) {
-
 	if req.GetName() == "" || req.GetUserId() < 0 || req.GetTakingDuration() < 0 || req.GetTreatmentDuration() < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}

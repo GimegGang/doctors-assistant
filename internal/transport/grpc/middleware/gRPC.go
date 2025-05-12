@@ -2,13 +2,14 @@ package gRPCMiddleware
 
 import (
 	"context"
+	"log/slog"
+	"time"
+
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"log/slog"
-	"time"
 )
 
 type traceIDKey struct{}

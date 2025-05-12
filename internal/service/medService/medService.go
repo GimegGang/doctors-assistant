@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"kode/internal/component/reception"
 	"kode/internal/entity"
 	medicineProto "kode/internal/transport/grpc/generated"
 	"kode/internal/transport/rest/restMiddleware"
-	"log/slog"
-	"time"
 )
 
 type medStorage interface {
@@ -108,7 +109,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 		log.Error("Error getting medicines", "error", err)
 		return nil, err
 	}
-	//TODO подумать над переводом логики ниже в отдельный компонен для упрощения чтения
+	// TODO подумать над переводом логики ниже в отдельный компонен для упрощения чтения
 	var res []*medicineProto.Medicines
 	now := timeNow()
 	period := now.Add(m.period)

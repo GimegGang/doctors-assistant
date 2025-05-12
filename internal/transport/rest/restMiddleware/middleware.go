@@ -2,10 +2,11 @@ package restMiddleware
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"log/slog"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type traceIDKey struct{}
@@ -30,7 +31,7 @@ func RestLogger(log *slog.Logger) gin.HandlerFunc {
 
 		c.Next()
 
-		latency := time.Now().Sub(start)
+		latency := time.Since(start)
 
 		attributes := []slog.Attr{
 			slog.Int("status", c.Writer.Status()),
