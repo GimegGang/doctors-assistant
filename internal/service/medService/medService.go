@@ -13,20 +13,13 @@ import (
 	"kode/internal/transport/rest/restMiddleware"
 )
 
-type medStorage interface {
-	AddMedicine(ctx context.Context, schedule entity.Medicine) (int64, error)
-	GetMedicines(ctx context.Context, medId int64) ([]int64, error)
-	GetMedicine(ctx context.Context, id int64) (*entity.Medicine, error)
-	GetMedicinesByUserID(ctx context.Context, userID int64) ([]*entity.Medicine, error)
-}
-
 type MedService struct {
 	log     *slog.Logger
-	storage medStorage
+	storage entity.StorageInterface
 	period  time.Duration
 }
 
-func New(log *slog.Logger, storage medStorage, period time.Duration) *MedService {
+func New(log *slog.Logger, storage entity.StorageInterface, period time.Duration) *MedService {
 	return &MedService{
 		log:     log,
 		storage: storage,
@@ -109,7 +102,7 @@ func (m *MedService) NextTakings(ctx context.Context, userId int64) ([]*medicine
 		log.Error("Error getting medicines", "error", err)
 		return nil, err
 	}
-	// TODO подумать над переводом логики ниже в отдельный компонен для упрощения чтения
+
 	var res []*medicineProto.Medicines
 	now := timeNow()
 	period := now.Add(m.period)

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"kode/internal/entity"
+	"kode/internal/infrastructure/persistence/postgres"
+	"kode/internal/infrastructure/persistence/sqlite"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -9,7 +12,6 @@ import (
 
 	"kode/internal/app"
 	"kode/internal/config"
-	"kode/internal/infrastructure/persistence/sqlite"
 	"kode/internal/service/medService"
 	"kode/pkg/logger"
 )
@@ -19,8 +21,17 @@ func main() {
 	log := logger.New(cfg.Env)
 	log.Info("config is loaded", slog.Any("config", cfg))
 
-	db, err := sqlite.New(cfg.StoragePath) // sqlite
-	// db, err := postgres.New("host=localhost port=5432 user=gimeg dbname=postgres sslmode=disable") //postgres
+	var db entity.StorageInterface
+	var err error
+
+	switch cfg.Env {
+	case "production":
+		db, err = postgres.New("host=localhost port=5432 user=gimeg dbname=postgres sslmode=disable")
+		log.Info("Using PostgreSQL database")
+	default:
+		db, err = sqlite.New(cfg.StoragePath)
+		log.Info("Using SQLite database")
+	}
 
 	if err != nil {
 		log.Error("Error opening database", "error", err)
