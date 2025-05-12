@@ -34,7 +34,7 @@ integration-test:
 # Запуск линтера
 lint:
 	@echo "Running linter..."
-	@golangci-lint run
+	@golangci-lint run --config .golangci.yml
 
 # Запуск приложения локально
 run:

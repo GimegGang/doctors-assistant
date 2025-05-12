@@ -1,4 +1,4 @@
-env: "prod"
+env: "local"
 rest_address: 8080
 grpc_address: 1234
 storage_path: "storage/storage.db"
