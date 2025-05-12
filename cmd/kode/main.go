@@ -26,7 +26,7 @@ func main() {
 
 	switch cfg.Env {
 	case "prod":
-		db, err = postgres.New("host=localhost port=5432 user=gimeg dbname=postgres sslmode=disable")
+		db, err = postgres.New("host=localhost port=5432 user=postgres dbname=postgres sslmode=disable")
 		log.Info("Using PostgreSQL database")
 	default:
 		db, err = sqlite.New(cfg.StoragePath)

@@ -26,6 +26,13 @@ unit-test:
 	@echo "Running unit tests..."
 	@go test -v -short $(UNIT_TEST_PKGS)
 
+# Узнать покрытие
+coverage:
+	@echo "Running coverage..."
+	@go test -coverprofile=coverage.out ./... && \
+    grep -Ev '(\.gen\.go|\.pb\.go|_grpc\.pb\.go|config\.go|logger\.go|interface\.go|entity|middleware\.go|handlers\.go|gRPC\.go|main\.go|app\.go|api)' coverage.out > filtered_coverage.out && \
+    go tool cover -func=filtered_coverage.out
+
 # Запуск интеграционных тестов
 integration-test:
 	@echo "Running integration tests..."
